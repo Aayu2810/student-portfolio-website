@@ -24,8 +24,8 @@ const RetroGrid = ({
   angle = 65,
   cellSize = 60,
   opacity = 0.5,
-  lightLineColor = "gray",
-  darkLineColor = "gray",
+  lightLineColor = "#E5E5E5", // Light gray
+  darkLineColor = "#CCCCCC",  // Lighter gray
 }) => {
   const gridStyles = {
     "--grid-angle": `${angle}deg`,
