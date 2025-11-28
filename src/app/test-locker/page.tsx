@@ -6,9 +6,17 @@ import { LockerListView } from "@/components/locker/LockerListView";
 import { FolderBreadcrumb } from "@/components/locker/FolderBreadcrumb";
 import { DocumentPreview } from "@/components/locker/DocumentPreview";
 import { RenameDialog } from "@/components/locker/RenameDialog";
+import { MoveDialog } from "@/components/locker/MoveDialog";
 import { Button } from "@/components/ui/button";
 import { Grid, List } from "lucide-react";
 import { Document, BreadcrumbItem } from "@/types/locker.types";  // ← ADD THIS
+
+const sampleFolders = [
+    { id: "folder1", name: "Personal Documents", path: "/Personal Documents" },
+    { id: "folder2", name: "Academic", path: "/Academic" },
+    { id: "folder3", name: "Certificates", path: "/Academic/Certificates" },
+    { id: "folder4", name: "Work", path: "/Work" },
+  ];
 
 const sampleDocuments: Document[] = [  // ← ADD TYPE HERE
   {
@@ -64,6 +72,8 @@ export default function TestLockerPage() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);        // ← ADD THIS
 const [renameDocument, setRenameDocument] = useState<Document | null>(null);  // ← ADD THIS
+const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+const [moveDocument, setMoveDocument] = useState<Document | null>(null);
 
   const handleDocumentClick = (doc: Document) => {  // ← CHANGED
     setPreviewDocument(doc);
@@ -88,6 +98,14 @@ const [renameDocument, setRenameDocument] = useState<Document | null>(null);  //
         setRenameDialogOpen(true);
       }
     }
+    
+    if (action === "move") {
+      const doc = sampleDocuments.find(d => d.id === docId);
+      if (doc) {
+        setMoveDocument(doc);
+        setMoveDialogOpen(true);
+      }
+    }
   };
 
   const handleNavigate = (item: BreadcrumbItem) => {
@@ -107,6 +125,14 @@ const [renameDocument, setRenameDocument] = useState<Document | null>(null);  //
   const handleRename = (newName: string) => {           // ← ADD THIS ENTIRE FUNCTION
     console.log(`Rename ${renameDocument?.name} to: ${newName}`);
     alert(`Renamed to: ${newName}`);
+  };
+
+  const handleMove = (folderId: string) => {
+    console.log(`Move ${moveDocument?.name} to folder: ${folderId}`);
+    const folderName = folderId === "root" 
+      ? "Root Folder" 
+      : sampleFolders.find(f => f.id === folderId)?.name || "Unknown";
+    alert(`Moved ${moveDocument?.name} to: ${folderName}`);
   };
 
   return (
@@ -181,6 +207,16 @@ const [renameDocument, setRenameDocument] = useState<Document | null>(null);  //
           currentName={renameDocument?.name || ""}
           itemType={renameDocument?.type || "file"}
         />
+
+        {/* Move Dialog */}
+<MoveDialog
+  isOpen={moveDialogOpen}
+  onClose={() => setMoveDialogOpen(false)}
+  onMove={handleMove}
+  currentFolderId={undefined}
+  itemName={moveDocument?.name || ""}
+  folders={sampleFolders}
+/>
       </div>
     </div>
   );
