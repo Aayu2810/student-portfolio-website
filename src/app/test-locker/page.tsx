@@ -18,6 +18,7 @@ import { ShareModal } from "@/components/sharing/ShareModal";
 import { QRDisplay } from "@/components/sharing/QRDisplay";
 import { ShareLinkCopy } from "@/components/sharing/ShareLinkCopy";
 import { AccessControl } from "@/components/sharing/AccessControl";
+import { ShareExpiry } from "@/components/sharing/ShareExpiry";
 
 const sampleFolders = [
     { id: "folder1", name: "Personal Documents", path: "/Personal Documents" },
@@ -101,6 +102,7 @@ const [accessUsers, setAccessUsers] = useState([
     addedAt: "2024-11-22T14:30:00Z",
   },
 ]);
+const [expiryDate, setExpiryDate] = useState<Date | null>(null);
 
   const handleDocumentClick = (doc: Document) => {  // ← CHANGED
     setPreviewDocument(doc);
@@ -224,6 +226,11 @@ const [accessUsers, setAccessUsers] = useState([
     console.log("Removed user:", userId);
   };
 
+  const handleExpiryChange = (date: Date | null) => {
+    setExpiryDate(date);
+    console.log("Expiry date:", date);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f0f1e] via-[#1a1a2e] to-[#16213e] p-8">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -316,6 +323,12 @@ const [accessUsers, setAccessUsers] = useState([
     onUpdatePermission={handleUpdatePermission}
     onRemoveUser={handleRemoveUser}
   />
+</div>
+
+{/* Share Expiry */}
+<div className="space-y-4">
+  <h2 className="text-2xl font-bold text-white">Share Expiry</h2>
+  <ShareExpiry expiryDate={expiryDate} onExpiryChange={handleExpiryChange} />
 </div>
 
         {/* Breadcrumb */}
