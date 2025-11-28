@@ -1,16 +1,34 @@
 "use client";
 
+import { useState } from "react";
 import { VerificationCard } from "@/components/verification/VerificationCard";
+import { VerifyModal } from "@/components/verification/VerifyModal";
 
 export default function TestVerificationPage() {
+  const [verifyModalOpen, setVerifyModalOpen] = useState(false);
+  const [selectedDoc, setSelectedDoc] = useState<{ name: string; type: string } | null>(null);
+
   const handleViewDetails = (docId: string) => {
     console.log("View details:", docId);
-    alert(`View details for document: ${docId}`);
+    const docs = {
+      "1": { name: "Degree Certificate.pdf", type: "Academic Certificate" },
+      "2": { name: "Transcript.pdf", type: "Academic Transcript" },
+      "3": { name: "ID Card.jpg", type: "Identity Document" },
+      "4": { name: "Birth Certificate.pdf", type: "Legal Document" },
+    };
+    setSelectedDoc(docs[docId as keyof typeof docs]);
+    setVerifyModalOpen(true);
   };
 
   const handleReupload = (docId: string) => {
     console.log("Reupload:", docId);
     alert(`Reupload document: ${docId}`);
+  };
+
+  const handleVerify = (action: "approve" | "reject", reason?: string) => {
+    console.log("Action:", action);
+    if (reason) console.log("Reason:", reason);
+    alert(`Document ${action}d${reason ? ` with reason: ${reason}` : ""}`);
   };
 
   return (
@@ -63,6 +81,17 @@ export default function TestVerificationPage() {
             onReupload={handleReupload}
           />
         </div>
+
+        {/* Verify Modal */}
+        {selectedDoc && (
+          <VerifyModal
+            isOpen={verifyModalOpen}
+            onClose={() => setVerifyModalOpen(false)}
+            onVerify={handleVerify}
+            documentName={selectedDoc.name}
+            documentType={selectedDoc.type}
+          />
+        )}
       </div>
     </div>
   );
