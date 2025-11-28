@@ -8,6 +8,7 @@ import { DocumentPreview } from "@/components/locker/DocumentPreview";
 import { RenameDialog } from "@/components/locker/RenameDialog";
 import { MoveDialog } from "@/components/locker/MoveDialog";
 import { SearchBar, SearchFilters } from "@/components/locker/SearchBar";
+import { FilterTags } from "@/components/locker/FilterTags";
 import { Button } from "@/components/ui/button";
 import { Grid, List } from "lucide-react";
 import { Document, BreadcrumbItem } from "@/types/locker.types";  // ← ADD THIS
@@ -75,6 +76,7 @@ export default function TestLockerPage() {
 const [renameDocument, setRenameDocument] = useState<Document | null>(null);  // ← ADD THIS
 const [moveDialogOpen, setMoveDialogOpen] = useState(false);
 const [moveDocument, setMoveDocument] = useState<Document | null>(null);
+const [activeTagFilter, setActiveTagFilter] = useState("all");
 
   const handleDocumentClick = (doc: Document) => {  // ← CHANGED
     setPreviewDocument(doc);
@@ -142,6 +144,12 @@ const [moveDocument, setMoveDocument] = useState<Document | null>(null);
     // TODO: Implement actual search/filter logic
   };
 
+  const handleTagFilter = (filterId: string) => {
+    setActiveTagFilter(filterId);
+    console.log("Active tag filter:", filterId);
+    // TODO: Implement actual filtering logic
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f0f1e] via-[#1a1a2e] to-[#16213e] p-8">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -154,6 +162,9 @@ const [moveDocument, setMoveDocument] = useState<Document | null>(null);
 
         {/* Search Bar */}
 <SearchBar onSearch={handleSearch} />
+
+{/* Filter Tags */}
+<FilterTags onFilterChange={handleTagFilter} activeFilter={activeTagFilter} />
 
         {/* View Toggle */}
         <div className="flex gap-2">
