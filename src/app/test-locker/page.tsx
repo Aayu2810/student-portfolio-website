@@ -21,6 +21,7 @@ import { AccessControl } from "@/components/sharing/AccessControl";
 import { ShareExpiry } from "@/components/sharing/ShareExpiry";
 import { UploadZone } from "@/components/upload/UploadZone";
 import { DocumentCategory } from "@/components/upload/DocumentCategory";
+import { BulkUpload } from "@/components/upload/BulkUpload";
 
 const sampleFolders = [
   { id: "folder1", name: "Personal Documents", path: "/Personal Documents" },
@@ -108,6 +109,37 @@ export default function TestLockerPage() {
   ]);
   const [expiryDate, setExpiryDate] = useState<Date | null>(null);
   const [selectedCategory, setSelectedCategory] = useState("academic");
+  const [bulkFiles, setBulkFiles] = useState([
+    {
+      id: "1",
+      name: "Document1.pdf",
+      size: 2457600,
+      status: "pending" as const,
+      progress: 0,
+    },
+    {
+      id: "2",
+      name: "Certificate.jpg",
+      size: 1024000,
+      status: "uploading" as const,
+      progress: 45,
+    },
+    {
+      id: "3",
+      name: "Resume.docx",
+      size: 512000,
+      status: "success" as const,
+      progress: 100,
+    },
+    {
+      id: "4",
+      name: "BadFile.txt",
+      size: 256000,
+      status: "error" as const,
+      progress: 0,
+      error: "File type not supported",
+    },
+  ]);
 
   const handleDocumentClick = (doc: Document) => {
     setPreviewDocument(doc);
@@ -247,6 +279,23 @@ export default function TestLockerPage() {
     console.log("Selected category:", categoryId);
   };
 
+  const handleUploadAll = () => {
+    console.log("Upload all files");
+    alert("Uploading all pending files...");
+  };
+
+  const handleRemoveFile = (fileId: string) => {
+    setBulkFiles(bulkFiles.filter((f) => f.id !== fileId));
+  };
+
+  const handleRemoveSelected = (fileIds: string[]) => {
+    setBulkFiles(bulkFiles.filter((f) => !fileIds.includes(f.id)));
+  };
+
+  const handleClearAll = () => {
+    setBulkFiles([]);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f0f1e] via-[#1a1a2e] to-[#16213e] p-8">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -360,11 +409,23 @@ export default function TestLockerPage() {
 
         {/* Document Category */}
         <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-white">Document Category</h2>
-            <DocumentCategory
-                selectedCategory={selectedCategory}
-                onCategoryChange={handleCategoryChange}
-            />
+          <h2 className="text-2xl font-bold text-white">Document Category</h2>
+          <DocumentCategory
+            selectedCategory={selectedCategory}
+            onCategoryChange={handleCategoryChange}
+          />
+        </div>
+
+        {/* Bulk Upload */}
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-white">Bulk Upload</h2>
+          <BulkUpload
+            files={bulkFiles}
+            onUploadAll={handleUploadAll}
+            onRemoveFile={handleRemoveFile}
+            onRemoveSelected={handleRemoveSelected}
+            onClearAll={handleClearAll}
+          />
         </div>
 
         {/* Breadcrumb */}
