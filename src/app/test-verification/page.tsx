@@ -4,10 +4,13 @@ import { useState } from "react";
 import { VerificationCard } from "@/components/verification/VerificationCard";
 import { VerifyModal } from "@/components/verification/VerifyModal";
 import { VerificationBadge } from "@/components/verification/VerificationBadge";
+import { Button } from "@/components/ui/button"; 
+import { RejectModal } from "@/components/verification/RejectModal";
 
 export default function TestVerificationPage() {
   const [verifyModalOpen, setVerifyModalOpen] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<{ name: string; type: string } | null>(null);
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
 
   const handleViewDetails = (docId: string) => {
     console.log("View details:", docId);
@@ -30,6 +33,11 @@ export default function TestVerificationPage() {
     console.log("Action:", action);
     if (reason) console.log("Reason:", reason);
     alert(`Document ${action}d${reason ? ` with reason: ${reason}` : ""}`);
+  };
+
+  const handleReject = (reason: string) => {
+    console.log("Rejection reason:", reason);
+    alert(`Document rejected with reason: ${reason}`);
   };
 
   return (
@@ -81,6 +89,16 @@ export default function TestVerificationPage() {
             onViewDetails={handleViewDetails}
             onReupload={handleReupload}
           />
+        </div>
+
+        {/* Test Reject Modal Button */}
+        <div className="flex justify-center">
+          <Button
+            onClick={() => setRejectModalOpen(true)}
+            className="bg-red-600 hover:bg-red-700"
+          >
+            Test Reject Modal
+          </Button>
         </div>
 
         {/* Badge Showcase Section */}
@@ -152,6 +170,13 @@ export default function TestVerificationPage() {
             documentType={selectedDoc.type}
           />
         )}
+
+        <RejectModal
+          isOpen={rejectModalOpen}
+          onClose={() => setRejectModalOpen(false)}
+          onReject={handleReject}
+          documentName="Test Document.pdf"
+        />
       </div>
     </div>
   );
