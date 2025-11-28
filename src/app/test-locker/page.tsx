@@ -17,6 +17,7 @@ import { Document, BreadcrumbItem } from "@/types/locker.types";
 import { ShareModal } from "@/components/sharing/ShareModal";
 import { QRDisplay } from "@/components/sharing/QRDisplay";
 import { ShareLinkCopy } from "@/components/sharing/ShareLinkCopy";
+import { AccessControl } from "@/components/sharing/AccessControl";
 
 const sampleFolders = [
     { id: "folder1", name: "Personal Documents", path: "/Personal Documents" },
@@ -85,6 +86,21 @@ const [moveDocument, setMoveDocument] = useState<Document | null>(null);
 const [activeTagFilter, setActiveTagFilter] = useState("all");
 const [shareModalOpen, setShareModalOpen] = useState(false);
 const [shareDocument, setShareDocument] = useState<Document | null>(null);
+const [isPublic, setIsPublic] = useState(false);
+const [accessUsers, setAccessUsers] = useState([
+  {
+    id: "1",
+    email: "john.doe@example.com",
+    permission: "view" as const,
+    addedAt: "2024-11-20T10:00:00Z",
+  },
+  {
+    id: "2",
+    email: "jane.smith@example.com",
+    permission: "edit" as const,
+    addedAt: "2024-11-22T14:30:00Z",
+  },
+]);
 
   const handleDocumentClick = (doc: Document) => {  // ← CHANGED
     setPreviewDocument(doc);
@@ -180,6 +196,34 @@ const [shareDocument, setShareDocument] = useState<Document | null>(null);
     alert("Create folder dialog would open here");
   };
 
+  const handleTogglePublic = (isPublic: boolean) => {
+    setIsPublic(isPublic);
+    console.log("Public access:", isPublic);
+  };
+  
+  const handleAddUser = (email: string, permission: "view" | "edit") => {
+    const newUser = {
+      id: Date.now().toString(),
+      email,
+      permission,
+      addedAt: new Date().toISOString(),
+    };
+    setAccessUsers([...accessUsers, newUser]);
+    console.log("Added user:", newUser);
+  };
+  
+  const handleUpdatePermission = (userId: string, permission: "view" | "edit") => {
+    setAccessUsers(
+      accessUsers.map((u) => (u.id === userId ? { ...u, permission } : u))
+    );
+    console.log("Updated permission:", userId, permission);
+  };
+  
+  const handleRemoveUser = (userId: string) => {
+    setAccessUsers(accessUsers.filter((u) => u.id !== userId));
+    console.log("Removed user:", userId);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f0f1e] via-[#1a1a2e] to-[#16213e] p-8">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -259,6 +303,19 @@ const [shareDocument, setShareDocument] = useState<Document | null>(null);
       />
     </div>
   </div>
+</div>
+
+{/* Access Control */}
+<div className="space-y-4">
+  <h2 className="text-2xl font-bold text-white">Access Control</h2>
+  <AccessControl
+    isPublic={isPublic}
+    onTogglePublic={handleTogglePublic}
+    users={accessUsers}
+    onAddUser={handleAddUser}
+    onUpdatePermission={handleUpdatePermission}
+    onRemoveUser={handleRemoveUser}
+  />
 </div>
 
         {/* Breadcrumb */}
