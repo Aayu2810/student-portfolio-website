@@ -9,6 +9,7 @@ import { RenameDialog } from "@/components/locker/RenameDialog";
 import { MoveDialog } from "@/components/locker/MoveDialog";
 import { SearchBar, SearchFilters } from "@/components/locker/SearchBar";
 import { FilterTags } from "@/components/locker/FilterTags";
+import { StorageUsage } from "@/components/locker/StorageUsage";
 import { Button } from "@/components/ui/button";
 import { Grid, List } from "lucide-react";
 import { Document, BreadcrumbItem } from "@/types/locker.types";  // ← ADD THIS
@@ -156,6 +157,13 @@ const [activeTagFilter, setActiveTagFilter] = useState("all");
         <h1 className="text-3xl font-bold text-white mb-8">
           Digital Locker Test Page
         </h1>
+
+        {/* Storage Usage */}
+<StorageUsage
+  usedStorage={3221225472} // 3 GB in bytes
+  totalStorage={5368709120} // 5 GB in bytes
+  showDetails={true}
+/>
 
         {/* Breadcrumb */}
         <FolderBreadcrumb items={breadcrumbItems} onNavigate={handleNavigate} />
