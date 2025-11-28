@@ -3,11 +3,17 @@
 import { useState } from "react";
 import { LockerGrid } from "@/components/locker/LockerGrid";
 import { LockerListView } from "@/components/locker/LockerListView";
+import { FolderBreadcrumb } from "@/components/locker/FolderBreadcrumb";
 import { Button } from "@/components/ui/button";
 import { Grid3x3, List } from "lucide-react";
 
 export default function TestLockerPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+
+  const breadcrumbItems = [
+    { id: "1", name: "Documents", path: "/documents" },
+    { id: "2", name: "Certificates", path: "/documents/certificates" },
+  ];
 
   const sampleDocuments = [
     {
@@ -72,6 +78,12 @@ export default function TestLockerPage() {
           </Button>
         </div>
       </div>
+
+      {/* Breadcrumb Navigation */}
+      <FolderBreadcrumb
+        items={breadcrumbItems}
+        onNavigate={(item) => console.log("Navigate to:", item)}
+      />
 
       {viewMode === "grid" ? (
         <LockerGrid
