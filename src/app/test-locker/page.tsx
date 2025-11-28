@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Grid, List } from "lucide-react";
 import { Document, BreadcrumbItem } from "@/types/locker.types";  
 import { ShareModal } from "@/components/sharing/ShareModal";
+import { QRDisplay } from "@/components/sharing/QRDisplay";
 
 const sampleFolders = [
     { id: "folder1", name: "Personal Documents", path: "/Personal Documents" },
@@ -191,6 +192,16 @@ const [shareDocument, setShareDocument] = useState<Document | null>(null);
   totalStorage={5368709120} // 5 GB in bytes
   showDetails={true}
 />
+
+{/* QR Code Test */}
+<div className="space-y-4">
+  <h2 className="text-2xl font-bold text-white">QR Code Display</h2>
+  <QRDisplay
+    url="https://campuscred.com/shared/degree-certificate-123"
+    title="Share: Degree Certificate"
+    size={200}
+  />
+</div>
 
         {/* Breadcrumb */}
         <FolderBreadcrumb items={breadcrumbItems} onNavigate={handleNavigate} />
