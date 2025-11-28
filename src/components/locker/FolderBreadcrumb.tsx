@@ -3,12 +3,7 @@
 import { ChevronRight, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
-interface BreadcrumbItem {
-  id: string;
-  name: string;
-  path: string;
-}
+import { BreadcrumbItem } from "@/types/locker.types";
 
 interface FolderBreadcrumbProps {
   items: BreadcrumbItem[];

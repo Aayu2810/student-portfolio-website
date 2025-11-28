@@ -15,15 +15,7 @@ import { DocumentActions } from "./DocumentActions";
 
 import { cn } from "@/lib/utils";
 
-interface Document {
-  id: string;
-  name: string;
-  type: "file" | "folder";
-  fileType?: string;
-  size?: number;
-  status?: "verified" | "pending" | "rejected";
-  uploadedAt: string;
-}
+import { Document } from "@/types/locker.types";
 
 interface LockerListViewProps {
   documents: Document[];

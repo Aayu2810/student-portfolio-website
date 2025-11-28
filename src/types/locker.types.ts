@@ -29,3 +29,24 @@ export interface DocumentMetadata {
   tags: string[]
   custom_fields?: Record<string, any>
 }
+
+// ADD THESE NEW INTERFACES BELOW:
+
+// Frontend component types (simplified for UI display)
+export interface Document {
+  id: string;
+  name: string;
+  type: "file" | "folder";
+  fileType?: string;
+  size?: number;
+  status?: "verified" | "pending" | "rejected";
+  uploadedAt: string;
+  thumbnailUrl?: string;
+  fileUrl?: string;
+}
+
+export interface BreadcrumbItem {
+  id: string;
+  name: string;
+  path: string;
+}
