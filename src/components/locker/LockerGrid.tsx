@@ -1,16 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { File, Folder, MoreVertical, Check, Clock, X } from "lucide-react";
+import { File, Folder, Check, Clock, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { DocumentActions } from "./DocumentActions";
+
 import { cn } from "@/lib/utils";
 
 interface Document {
@@ -124,71 +120,13 @@ export function LockerGrid({
               </h3>
 
               {/* Actions Menu */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0 hover:bg-purple-400/20"
-                  >
-                    <MoreVertical className="w-4 h-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  className="bg-slate-800/95 backdrop-blur-md border-white/10"
-                >
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onAction("preview", doc.id);
-                    }}
-                  >
-                    Preview
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onAction("download", doc.id);
-                    }}
-                  >
-                    Download
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onAction("share", doc.id);
-                    }}
-                  >
-                    Share
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onAction("rename", doc.id);
-                    }}
-                  >
-                    Rename
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onAction("move", doc.id);
-                    }}
-                  >
-                    Move
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onAction("delete", doc.id);
-                    }}
-                    className="text-red-500 focus:text-red-500"
-                  >
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+<DocumentActions
+  documentId={doc.id}
+  documentName={doc.name}
+  onAction={onAction}
+  showStar
+  showArchive
+/>
             </div>
 
             {/* Metadata */}
