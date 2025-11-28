@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { VerificationCard } from "@/components/verification/VerificationCard";
 import { VerifyModal } from "@/components/verification/VerifyModal";
+import { VerificationBadge } from "@/components/verification/VerificationBadge";
 
 export default function TestVerificationPage() {
   const [verifyModalOpen, setVerifyModalOpen] = useState(false);
@@ -80,6 +81,65 @@ export default function TestVerificationPage() {
             onViewDetails={handleViewDetails}
             onReupload={handleReupload}
           />
+        </div>
+
+        {/* Badge Showcase Section */}
+        <div className="mt-12 space-y-6">
+          <h2 className="text-2xl font-bold text-white">Verification Badges</h2>
+          
+          {/* Size Variants */}
+          <div className="p-6 bg-white/5 border border-white/10 rounded-xl space-y-4">
+            <h3 className="text-lg font-semibold text-white mb-4">Size Variants</h3>
+            
+            <div className="space-y-3">
+              <div className="flex items-center gap-4">
+                <span className="text-gray-400 w-24">Small:</span>
+                <VerificationBadge status="verified" size="sm" />
+                <VerificationBadge status="pending" size="sm" />
+                <VerificationBadge status="rejected" size="sm" />
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <span className="text-gray-400 w-24">Medium:</span>
+                <VerificationBadge status="verified" size="md" />
+                <VerificationBadge status="pending" size="md" />
+                <VerificationBadge status="rejected" size="md" />
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <span className="text-gray-400 w-24">Large:</span>
+                <VerificationBadge status="verified" size="lg" />
+                <VerificationBadge status="pending" size="lg" />
+                <VerificationBadge status="rejected" size="lg" />
+              </div>
+            </div>
+          </div>
+
+          {/* All Status Types */}
+          <div className="p-6 bg-white/5 border border-white/10 rounded-xl space-y-4">
+            <h3 className="text-lg font-semibold text-white mb-4">All Status Types</h3>
+            
+            <div className="flex flex-wrap gap-3">
+              <VerificationBadge status="verified" />
+              <VerificationBadge status="in-review" />
+              <VerificationBadge status="pending" />
+              <VerificationBadge status="rejected" />
+              <VerificationBadge status="expired" />
+            </div>
+          </div>
+
+          {/* Icon Only */}
+          <div className="p-6 bg-white/5 border border-white/10 rounded-xl space-y-4">
+            <h3 className="text-lg font-semibold text-white mb-4">Icon Only (No Label)</h3>
+            
+            <div className="flex flex-wrap gap-3">
+              <VerificationBadge status="verified" showLabel={false} />
+              <VerificationBadge status="in-review" showLabel={false} />
+              <VerificationBadge status="pending" showLabel={false} />
+              <VerificationBadge status="rejected" showLabel={false} />
+              <VerificationBadge status="expired" showLabel={false} />
+            </div>
+          </div>
         </div>
 
         {/* Verify Modal */}
