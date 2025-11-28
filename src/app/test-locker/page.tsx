@@ -13,7 +13,8 @@ import { StorageUsage } from "@/components/locker/StorageUsage";
 import { EmptyState } from "@/components/locker/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Grid, List } from "lucide-react";
-import { Document, BreadcrumbItem } from "@/types/locker.types";  // ← ADD THIS
+import { Document, BreadcrumbItem } from "@/types/locker.types";  
+import { ShareModal } from "@/components/sharing/ShareModal";
 
 const sampleFolders = [
     { id: "folder1", name: "Personal Documents", path: "/Personal Documents" },
@@ -80,6 +81,8 @@ const [renameDocument, setRenameDocument] = useState<Document | null>(null);  //
 const [moveDialogOpen, setMoveDialogOpen] = useState(false);
 const [moveDocument, setMoveDocument] = useState<Document | null>(null);
 const [activeTagFilter, setActiveTagFilter] = useState("all");
+const [shareModalOpen, setShareModalOpen] = useState(false);
+const [shareDocument, setShareDocument] = useState<Document | null>(null);
 
   const handleDocumentClick = (doc: Document) => {  // ← CHANGED
     setPreviewDocument(doc);
@@ -112,6 +115,14 @@ const [activeTagFilter, setActiveTagFilter] = useState("all");
         setMoveDialogOpen(true);
       }
     }
+    
+    if (action === "share") {  // ← ADD THIS ENTIRE BLOCK
+      const doc = sampleDocuments.find(d => d.id === docId);
+      if (doc) {
+        setShareDocument(doc);
+        setShareModalOpen(true);
+      }
+    }
   };
 
   const handleNavigate = (item: BreadcrumbItem) => {
@@ -125,7 +136,11 @@ const [activeTagFilter, setActiveTagFilter] = useState("all");
 
   const handleShare = (docId: string) => {
     console.log(`Share document: ${docId}`);
-    alert(`Share dialog for document ${docId}`);
+    const doc = sampleDocuments.find(d => d.id === docId);
+    if (doc) {
+      setShareDocument(doc);
+      setShareModalOpen(true);
+    }
   };
 
   const handleRename = (newName: string) => {           // ← ADD THIS ENTIRE FUNCTION
@@ -266,6 +281,15 @@ const [activeTagFilter, setActiveTagFilter] = useState("all");
   itemName={moveDocument?.name || ""}
   folders={sampleFolders}
 />
+{/* Share Modal */}
+{shareDocument && (
+  <ShareModal
+    isOpen={shareModalOpen}
+    onClose={() => setShareModalOpen(false)}
+    documentName={shareDocument.name}
+    documentId={shareDocument.id}
+  />
+)}
       </div>
     </div>
   );
