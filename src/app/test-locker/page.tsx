@@ -22,6 +22,7 @@ import { ShareExpiry } from "@/components/sharing/ShareExpiry";
 import { UploadZone } from "@/components/upload/UploadZone";
 import { DocumentCategory } from "@/components/upload/DocumentCategory";
 import { BulkUpload } from "@/components/upload/BulkUpload";
+import { UploadProgress } from "@/components/upload/UploadProgress";
 
 const sampleFolders = [
   { id: "folder1", name: "Personal Documents", path: "/Personal Documents" },
@@ -427,6 +428,50 @@ export default function TestLockerPage() {
             onClearAll={handleClearAll}
           />
         </div>
+
+        {/* Upload Progress */}
+<div className="space-y-4">
+  <h2 className="text-2xl font-bold text-white">Upload Progress States</h2>
+  <div className="space-y-3">
+    <UploadProgress
+      fileName="Waiting.pdf"
+      fileSize={2457600}
+      progress={0}
+      status="idle"
+    />
+    <UploadProgress
+      fileName="Uploading-Document.pdf"
+      fileSize={3145728}
+      progress={65}
+      status="uploading"
+    />
+    <UploadProgress
+      fileName="Success-Certificate.jpg"
+      fileSize={1024000}
+      progress={100}
+      status="success"
+    />
+    <UploadProgress
+      fileName="Failed-File.docx"
+      fileSize={512000}
+      progress={0}
+      status="error"
+      error="Network connection lost"
+    />
+    
+    {/* Compact Version */}
+    <div className="mt-6 p-4 bg-white/5 border border-white/10 rounded-xl">
+      <p className="text-sm text-gray-400 mb-3">Compact Version:</p>
+      <UploadProgress
+        fileName="Compact-Upload.pdf"
+        fileSize={2048000}
+        progress={80}
+        status="uploading"
+        compact={true}
+      />
+    </div>
+  </div>
+</div>
 
         {/* Breadcrumb */}
         <FolderBreadcrumb items={breadcrumbItems} onNavigate={handleNavigate} />
