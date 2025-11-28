@@ -5,6 +5,7 @@ import { LockerGrid } from "@/components/locker/LockerGrid";
 import { LockerListView } from "@/components/locker/LockerListView";
 import { FolderBreadcrumb } from "@/components/locker/FolderBreadcrumb";
 import { DocumentPreview } from "@/components/locker/DocumentPreview";
+import { RenameDialog } from "@/components/locker/RenameDialog";
 import { Button } from "@/components/ui/button";
 import { Grid, List } from "lucide-react";
 import { Document, BreadcrumbItem } from "@/types/locker.types";  // ← ADD THIS
@@ -61,6 +62,8 @@ export default function TestLockerPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [previewDocument, setPreviewDocument] = useState<Document | null>(null);  // ← CHANGED
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);        // ← ADD THIS
+const [renameDocument, setRenameDocument] = useState<Document | null>(null);  // ← ADD THIS
 
   const handleDocumentClick = (doc: Document) => {  // ← CHANGED
     setPreviewDocument(doc);
@@ -77,6 +80,14 @@ export default function TestLockerPage() {
         setIsPreviewOpen(true);
       }
     }
+    
+    if (action === "rename") {
+      const doc = sampleDocuments.find(d => d.id === docId);
+      if (doc) {
+        setRenameDocument(doc);
+        setRenameDialogOpen(true);
+      }
+    }
   };
 
   const handleNavigate = (item: BreadcrumbItem) => {
@@ -91,6 +102,11 @@ export default function TestLockerPage() {
   const handleShare = (docId: string) => {
     console.log(`Share document: ${docId}`);
     alert(`Share dialog for document ${docId}`);
+  };
+
+  const handleRename = (newName: string) => {           // ← ADD THIS ENTIRE FUNCTION
+    console.log(`Rename ${renameDocument?.name} to: ${newName}`);
+    alert(`Renamed to: ${newName}`);
   };
 
   return (
@@ -155,6 +171,15 @@ export default function TestLockerPage() {
           onClose={() => setIsPreviewOpen(false)}
           onDownload={handleDownload}
           onShare={handleShare}
+        />
+
+        {/* Rename Dialog */}
+        <RenameDialog
+          isOpen={renameDialogOpen}
+          onClose={() => setRenameDialogOpen(false)}
+          onRename={handleRename}
+          currentName={renameDocument?.name || ""}
+          itemType={renameDocument?.type || "file"}
         />
       </div>
     </div>
