@@ -7,6 +7,7 @@ import { FolderBreadcrumb } from "@/components/locker/FolderBreadcrumb";
 import { DocumentPreview } from "@/components/locker/DocumentPreview";
 import { RenameDialog } from "@/components/locker/RenameDialog";
 import { MoveDialog } from "@/components/locker/MoveDialog";
+import { SearchBar, SearchFilters } from "@/components/locker/SearchBar";
 import { Button } from "@/components/ui/button";
 import { Grid, List } from "lucide-react";
 import { Document, BreadcrumbItem } from "@/types/locker.types";  // ← ADD THIS
@@ -135,6 +136,12 @@ const [moveDocument, setMoveDocument] = useState<Document | null>(null);
     alert(`Moved ${moveDocument?.name} to: ${folderName}`);
   };
 
+  const handleSearch = (query: string, filters: SearchFilters) => {
+    console.log("Search query:", query);
+    console.log("Filters:", filters);
+    // TODO: Implement actual search/filter logic
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f0f1e] via-[#1a1a2e] to-[#16213e] p-8">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -144,6 +151,9 @@ const [moveDocument, setMoveDocument] = useState<Document | null>(null);
 
         {/* Breadcrumb */}
         <FolderBreadcrumb items={breadcrumbItems} onNavigate={handleNavigate} />
+
+        {/* Search Bar */}
+<SearchBar onSearch={handleSearch} />
 
         {/* View Toggle */}
         <div className="flex gap-2">
