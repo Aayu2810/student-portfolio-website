@@ -6,6 +6,7 @@ import { VerifyModal } from "@/components/verification/VerifyModal";
 import { VerificationBadge } from "@/components/verification/VerificationBadge";
 import { Button } from "@/components/ui/button"; 
 import { RejectModal } from "@/components/verification/RejectModal";
+import { VerificationTimeline } from "@/components/verification/VerificationTimeline";
 
 export default function TestVerificationPage() {
   const [verifyModalOpen, setVerifyModalOpen] = useState(false);
@@ -39,6 +40,41 @@ export default function TestVerificationPage() {
     console.log("Rejection reason:", reason);
     alert(`Document rejected with reason: ${reason}`);
   };
+
+  const sampleTimelineEvents = [
+    {
+      id: "1",
+      type: "uploaded" as const,
+      title: "Document Uploaded",
+      description: "User uploaded Degree Certificate.pdf",
+      timestamp: "2024-11-20T09:00:00Z",
+      user: "Lakshmi Kumar",
+    },
+    {
+      id: "2",
+      type: "in-review" as const,
+      title: "Verification Started",
+      description: "Admin team began reviewing the document",
+      timestamp: "2024-11-20T10:30:00Z",
+      user: "Admin Team",
+    },
+    {
+      id: "3",
+      type: "comment" as const,
+      title: "Comment Added",
+      description: "Requested additional information about graduation date",
+      timestamp: "2024-11-20T14:15:00Z",
+      user: "John Doe (Verifier)",
+    },
+    {
+      id: "4",
+      type: "verified" as const,
+      title: "Document Verified",
+      description: "All information verified successfully",
+      timestamp: "2024-11-21T11:00:00Z",
+      user: "Jane Smith (Senior Verifier)",
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f0f1e] via-[#1a1a2e] to-[#16213e] p-8">
@@ -99,6 +135,14 @@ export default function TestVerificationPage() {
           >
             Test Reject Modal
           </Button>
+        </div>
+
+         {/* Timeline Section */}
+         <div className="mt-12 space-y-6">
+          <h2 className="text-2xl font-bold text-white">Verification Timeline</h2>
+          <div className="p-6 bg-white/5 border border-white/10 rounded-xl">
+            <VerificationTimeline events={sampleTimelineEvents} />
+          </div>
         </div>
 
         {/* Badge Showcase Section */}
