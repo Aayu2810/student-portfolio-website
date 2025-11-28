@@ -20,6 +20,7 @@ import { ShareLinkCopy } from "@/components/sharing/ShareLinkCopy";
 import { AccessControl } from "@/components/sharing/AccessControl";
 import { ShareExpiry } from "@/components/sharing/ShareExpiry";
 import { UploadZone } from "@/components/upload/UploadZone";
+import { DocumentCategory } from "@/components/upload/DocumentCategory";
 
 const sampleFolders = [
   { id: "folder1", name: "Personal Documents", path: "/Personal Documents" },
@@ -106,6 +107,7 @@ export default function TestLockerPage() {
     },
   ]);
   const [expiryDate, setExpiryDate] = useState<Date | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState("academic");
 
   const handleDocumentClick = (doc: Document) => {
     setPreviewDocument(doc);
@@ -240,6 +242,11 @@ export default function TestLockerPage() {
     console.log("Uploaded files:", files);
   };
 
+  const handleCategoryChange = (categoryId: string) => {
+    setSelectedCategory(categoryId);
+    console.log("Selected category:", categoryId);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f0f1e] via-[#1a1a2e] to-[#16213e] p-8">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -349,6 +356,15 @@ export default function TestLockerPage() {
         <div className="space-y-4">
           <h2 className="text-2xl font-bold text-white">Upload Zone</h2>
           <UploadZone onUpload={handleUploadFiles} maxSize={10} maxFiles={5} />
+        </div>
+
+        {/* Document Category */}
+        <div className="space-y-4">
+            <h2 className="text-2xl font-bold text-white">Document Category</h2>
+            <DocumentCategory
+                selectedCategory={selectedCategory}
+                onCategoryChange={handleCategoryChange}
+            />
         </div>
 
         {/* Breadcrumb */}
