@@ -10,6 +10,7 @@ import { MoveDialog } from "@/components/locker/MoveDialog";
 import { SearchBar, SearchFilters } from "@/components/locker/SearchBar";
 import { FilterTags } from "@/components/locker/FilterTags";
 import { StorageUsage } from "@/components/locker/StorageUsage";
+import { EmptyState } from "@/components/locker/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Grid, List } from "lucide-react";
 import { Document, BreadcrumbItem } from "@/types/locker.types";  // ← ADD THIS
@@ -62,6 +63,7 @@ const sampleDocuments: Document[] = [  // ← ADD TYPE HERE
     uploadedAt: "2024-11-25T16:20:00Z",
   },
 ];
+
 
 const breadcrumbItems: BreadcrumbItem[] = [  // ← ADD TYPE HERE
   { id: "home", name: "Home", path: "/" },
@@ -151,6 +153,16 @@ const [activeTagFilter, setActiveTagFilter] = useState("all");
     // TODO: Implement actual filtering logic
   };
 
+  const handleUpload = () => {
+    console.log("Upload clicked");
+    alert("Upload dialog would open here");
+  };
+  
+  const handleCreateFolder = () => {
+    console.log("Create folder clicked");
+    alert("Create folder dialog would open here");
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f0f1e] via-[#1a1a2e] to-[#16213e] p-8">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -205,19 +217,27 @@ const [activeTagFilter, setActiveTagFilter] = useState("all");
         </div>
 
         {/* Document Views */}
-        {viewMode === "grid" ? (
-          <LockerGrid
-            documents={sampleDocuments}
-            onDocumentClick={handleDocumentClick}
-            onAction={handleAction}
-          />
-        ) : (
-          <LockerListView
-            documents={sampleDocuments}
-            onDocumentClick={handleDocumentClick}
-            onAction={handleAction}
-          />
-        )}
+{sampleDocuments.length > 0 ? (
+  viewMode === "grid" ? (
+    <LockerGrid
+      documents={sampleDocuments}
+      onDocumentClick={handleDocumentClick}
+      onAction={handleAction}
+    />
+  ) : (
+    <LockerListView
+      documents={sampleDocuments}
+      onDocumentClick={handleDocumentClick}
+      onAction={handleAction}
+    />
+  )
+) : (
+  <EmptyState
+    type="no-documents"
+    onUpload={handleUpload}
+    onCreateFolder={handleCreateFolder}
+  />
+)}
 
         {/* Preview Modal */}
         <DocumentPreview
