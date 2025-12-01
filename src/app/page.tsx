@@ -4,10 +4,12 @@ import Footer from "../components/home/Footer";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-white dark:bg-black">
-      <HeroSection />
-      <Features />
-      <Footer />
-    </main>
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950 to-gray-950">
+      <main className="min-h-screen bg-white dark:bg-black">
+        <HeroSection />
+        <Features />
+        <Footer />
+      </main>
+    </div>
   );
 }

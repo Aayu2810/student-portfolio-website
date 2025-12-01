@@ -11,6 +11,7 @@ interface HeroSectionProps extends React.HTMLAttributes<HTMLDivElement> {
   description?: string
   ctaText?: string
   ctaHref?: string
+  onCtaClick?: () => void
   gridOptions?: {
     angle?: number
     cellSize?: number
@@ -63,6 +64,7 @@ const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
       description = "Store, verify, and share your certificates, internships, projects, and achievements in one secure place. Faculty-verified portfolios for seamless placements.",
       ctaText = "Get Started",
       ctaHref = "/register",
+      onCtaClick,
       gridOptions,
       ...props
     },
