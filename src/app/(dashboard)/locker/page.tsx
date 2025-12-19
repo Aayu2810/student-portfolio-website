@@ -9,19 +9,15 @@ import { RenameDialog } from "@/components/locker/RenameDialog";
 import { MoveDialog } from "@/components/locker/MoveDialog";
 import { SearchBar, SearchFilters } from "@/components/locker/SearchBar";
 import { FilterTags } from "@/components/locker/FilterTags";
-import { StorageUsage } from "@/components/locker/StorageUsage";
 import { EmptyState } from "@/components/locker/EmptyState";
 import { Grid, List } from "lucide-react";
 import { Document, BreadcrumbItem } from "@/types/locker.types";
 import { ShareModal } from "@/components/sharing/ShareModal";
 import { QRDisplay } from "@/components/sharing/QRDisplay";
 import { ShareLinkCopy } from "@/components/sharing/ShareLinkCopy";
-import { AccessControl } from "@/components/sharing/AccessControl";
 import { ShareExpiry } from "@/components/sharing/ShareExpiry";
 import { UploadZone } from "@/components/upload/UploadZone";
 import { DocumentCategory } from "@/components/upload/DocumentCategory";
-import { BulkUpload } from "@/components/upload/BulkUpload";
-import { UploadProgress } from "@/components/upload/UploadProgress";
 import { UploadModal } from "@/components/upload/UploadModal";
 
 const sampleFolders = [
@@ -40,8 +36,6 @@ const sampleDocuments: Document[] = [
     size: 2457600,
     status: "verified",
     uploadedAt: "2024-11-15T10:30:00Z",
-    thumbnailUrl:
-      "https://via.placeholder.com/400x300/6366f1/ffffff?text=Degree+Certificate",
     fileUrl:
       "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
   },
@@ -62,8 +56,6 @@ const sampleDocuments: Document[] = [
     size: 512000,
     status: "rejected",
     uploadedAt: "2024-11-22T09:45:00Z",
-    thumbnailUrl:
-      "https://via.placeholder.com/400x300/ec4899/ffffff?text=ID+Card",
   },
   {
     id: "4",
@@ -110,37 +102,6 @@ export default function TestLockerPage() {
   ]);
   const [expiryDate, setExpiryDate] = useState<Date | null>(null);
   const [selectedCategory, setSelectedCategory] = useState("academic");
-  const [bulkFiles, setBulkFiles] = useState([
-    {
-      id: "1",
-      name: "Document1.pdf",
-      size: 2457600,
-      status: "pending" as const,
-      progress: 0,
-    },
-    {
-      id: "2",
-      name: "Certificate.jpg",
-      size: 1024000,
-      status: "uploading" as const,
-      progress: 45,
-    },
-    {
-      id: "3",
-      name: "Resume.docx",
-      size: 512000,
-      status: "success" as const,
-      progress: 100,
-    },
-    {
-      id: "4",
-      name: "BadFile.txt",
-      size: 256000,
-      status: "error" as const,
-      progress: 0,
-      error: "File type not supported",
-    },
-  ]);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
   const handleUpload = (files: File[]) => {
@@ -300,36 +261,23 @@ export default function TestLockerPage() {
     console.log("Selected category:", categoryId);
   };
 
-  const handleUploadAll = () => {
-    console.log("Upload all files");
-    alert("Uploading all pending files...");
-  };
-
-  const handleRemoveFile = (fileId: string) => {
-    setBulkFiles(bulkFiles.filter((f) => f.id !== fileId));
-  };
-
-  const handleRemoveSelected = (fileIds: string[]) => {
-    setBulkFiles(bulkFiles.filter((f) => !fileIds.includes(f.id)));
-  };
-
-  const handleClearAll = () => {
-    setBulkFiles([]);
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f0f1e] via-[#1a1a2e] to-[#16213e] p-8">
       <div className="max-w-7xl mx-auto space-y-6">
-        <h1 className="text-3xl font-bold text-white mb-8">
-          Digital Locker Test Page
-        </h1>
+        {/* Upload Zone */}
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-white">Upload Zone</h2>
+          <UploadZone onUpload={handleUploadFiles} maxSize={10} maxFiles={5} />
+        </div>
 
-        {/* Storage Usage */}
-        <StorageUsage
-          usedStorage={3221225472}
-          totalStorage={5368709120}
-          showDetails={true}
-        />
+        {/* Document Category */}
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-white">Document Category</h2>
+          <DocumentCategory
+            selectedCategory={selectedCategory}
+            onCategoryChange={handleCategoryChange}
+          />
+        </div>
 
         {/* QR Code Test */}
         <div className="space-y-4">
@@ -400,19 +348,6 @@ export default function TestLockerPage() {
           </div>
         </div>
 
-        {/* Access Control */}
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-white">Access Control</h2>
-          <AccessControl
-            isPublic={isPublic}
-            onTogglePublic={handleTogglePublic}
-            users={accessUsers}
-            onAddUser={handleAddUser}
-            onUpdatePermission={handleUpdatePermission}
-            onRemoveUser={handleRemoveUser}
-          />
-        </div>
-
         {/* Share Expiry */}
         <div className="space-y-4">
           <h2 className="text-2xl font-bold text-white">Share Expiry</h2>
@@ -420,77 +355,6 @@ export default function TestLockerPage() {
             expiryDate={expiryDate}
             onExpiryChange={handleExpiryChange}
           />
-        </div>
-
-        {/* Upload Zone */}
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-white">Upload Zone</h2>
-          <UploadZone onUpload={handleUploadFiles} maxSize={10} maxFiles={5} />
-        </div>
-
-        {/* Document Category */}
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-white">Document Category</h2>
-          <DocumentCategory
-            selectedCategory={selectedCategory}
-            onCategoryChange={handleCategoryChange}
-          />
-        </div>
-
-        {/* Bulk Upload */}
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-white">Bulk Upload</h2>
-          <BulkUpload
-            files={bulkFiles}
-            onUploadAll={handleUploadAll}
-            onRemoveFile={handleRemoveFile}
-            onRemoveSelected={handleRemoveSelected}
-            onClearAll={handleClearAll}
-          />
-        </div>
-
-        {/* Upload Progress */}
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-white">Upload Progress States</h2>
-          <div className="space-y-3">
-            <UploadProgress
-              fileName="Waiting.pdf"
-              fileSize={2457600}
-              progress={0}
-              status="idle"
-            />
-            <UploadProgress
-              fileName="Uploading-Document.pdf"
-              fileSize={3145728}
-              progress={65}
-              status="uploading"
-            />
-            <UploadProgress
-              fileName="Success-Certificate.jpg"
-              fileSize={1024000}
-              progress={100}
-              status="success"
-            />
-            <UploadProgress
-              fileName="Failed-File.docx"
-              fileSize={512000}
-              progress={0}
-              status="error"
-              error="Network connection lost"
-            />
-            
-            {/* Compact Version */}
-            <div className="mt-6 p-4 bg-white/5 border border-white/10 rounded-xl">
-              <p className="text-sm text-gray-400 mb-3">Compact Version:</p>
-              <UploadProgress
-                fileName="Compact-Upload.pdf"
-                fileSize={2048000}
-                progress={80}
-                status="uploading"
-                compact={true}
-              />
-            </div>
-          </div>
         </div>
 
         {/* Breadcrumb */}

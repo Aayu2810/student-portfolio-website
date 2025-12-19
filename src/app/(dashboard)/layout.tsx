@@ -1,4 +1,4 @@
-import { Navbar } from '@/components/navbar/Navbar';
+import { Sidebar } from '@/components/dashboard/Sidebar';
 
 export default function DashboardLayout({
   children,
@@ -6,9 +6,9 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f0f1e] via-[#1a1a2e] to-[#16213e]">
-      <Navbar />
-      <main className="p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950/20 to-gray-950 flex">
+      <Sidebar />
+      <main className="flex-1 overflow-auto">
         {children}
       </main>
     </div>

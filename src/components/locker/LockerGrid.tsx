@@ -123,7 +123,7 @@ export function LockerGrid({
             {/* Metadata */}
             <div className="flex items-center justify-between text-xs text-gray-400">
               <span>{doc.type === "folder" ? "Folder" : formatFileSize(doc.size)}</span>
-              <span>{new Date(doc.uploadedAt).toLocaleDateString()}</span>
+              <span suppressHydrationWarning>{new Date(doc.uploadedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
             </div>
           </div>
         </Card>

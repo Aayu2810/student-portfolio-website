@@ -177,7 +177,7 @@ export function AccessControl({
                     <div className="flex-1 min-w-0">
                       <p className="text-white text-sm truncate">{user.email}</p>
                       <p className="text-xs text-gray-400">
-                        Added {new Date(user.addedAt).toLocaleDateString()}
+                        <span suppressHydrationWarning>Added {new Date(user.addedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                       </p>
                     </div>
                   </div>
