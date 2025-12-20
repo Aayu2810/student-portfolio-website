@@ -19,7 +19,7 @@ export default function LockerLayout({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-gradient-to-br from-[#0f0f1e] via-[#1a1a2e] to-[#16213e] p-6">
       <div className="max-w-7xl mx-auto">
         {/* Locker Header */}
-        <div className="mb-8">
+        <div className="mb-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
             <div>
               <h1 className="text-3xl md:text-4xl font-bold text-white">Digital Locker</h1>
@@ -38,7 +38,7 @@ export default function LockerLayout({ children }: { children: ReactNode }) {
           </div>
           
           {/* Search Bar */}
-          <div className="relative max-w-md">
+          <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#9ca3af] w-5 h-5" />
             <input
               type="text"

@@ -99,7 +99,16 @@ export function DocumentCategory({
     <div className="space-y-4">
       {/* Toggle View Mode */}
       <div className="flex items-center justify-between">
-        <Label className="text-white">Select Document Category</Label>
+        <div className="flex items-center gap-4">
+          <Label className="text-white">Select Document Category</Label>
+          {selectedCat && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-purple-500/20 border border-purple-500/30 rounded-lg">
+              <span className="text-purple-300 text-xs font-medium">Selected Category:</span>
+              <span className={selectedCat.color}>{selectedCat.icon}</span>
+              <span className="text-white font-semibold text-sm">{selectedCat.name}</span>
+            </div>
+          )}
+        </div>
         <button
           onClick={() => setViewMode(viewMode === "grid" ? "dropdown" : "grid")}
           className="text-xs text-gray-400 hover:text-white transition-colors"
@@ -116,17 +125,17 @@ export function DocumentCategory({
               key={category.id}
               onClick={() => onCategoryChange(category.id)}
               className={cn(
-                "p-4 rounded-lg border-2 transition-all text-left",
+                "p-3 rounded-lg border-2 transition-all text-left",
                 "hover:scale-105 hover:shadow-lg",
                 selectedCategory === category.id
                   ? "bg-purple-500/20 border-purple-500 shadow-lg shadow-purple-500/20"
                   : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-purple-400/30"
               )}
             >
-              <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-3">
                 <div
                   className={cn(
-                    "w-10 h-10 rounded-lg flex items-center justify-center",
+                    "w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0",
                     selectedCategory === category.id
                       ? "bg-purple-500/20"
                       : "bg-white/5"
@@ -134,18 +143,18 @@ export function DocumentCategory({
                 >
                   <span className={category.color}>{category.icon}</span>
                 </div>
-                <div>
+                <div className="flex-1 min-w-0">
                   <p className="text-white font-semibold text-sm">
                     {category.name}
                   </p>
-                  <p className="text-xs text-gray-400 mt-1">
+                  <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">
                     {category.description}
                   </p>
                 </div>
-                {selectedCategory === category.id && (
-                  <div className="mt-2 w-full h-1 bg-purple-500 rounded-full" />
-                )}
               </div>
+              {selectedCategory === category.id && (
+                <div className="mt-2 w-full h-1 bg-purple-500 rounded-full" />
+              )}
             </button>
           ))}
         </div>
@@ -185,23 +194,6 @@ export function DocumentCategory({
             ))}
           </SelectContent>
         </Select>
-      )}
-
-      {/* Selected Category Display */}
-      {selectedCat && (
-        <Card className="p-4 bg-purple-500/10 border border-purple-500/20">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-500/20 rounded-lg">
-              <span className={selectedCat.color}>{selectedCat.icon}</span>
-            </div>
-            <div className="flex-1">
-              <p className="text-sm text-purple-300 font-medium">
-                Selected Category:
-              </p>
-              <p className="text-white font-semibold">{selectedCat.name}</p>
-            </div>
-          </div>
-        </Card>
       )}
     </div>
   );
