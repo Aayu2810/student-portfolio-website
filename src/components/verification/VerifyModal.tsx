@@ -39,12 +39,7 @@ export function VerifyModal({
       return;
     }
 
-    if (action === "reject" && !rejectionReason.trim()) {
-      setError("Please provide a reason for rejection");
-      return;
-    }
-
-    onVerify(action, action === "reject" ? rejectionReason : undefined);
+    onVerify(action);
     handleClose();
   };
 
@@ -108,49 +103,18 @@ export function VerifyModal({
               {/* Reject Button */}
               <button
                 onClick={() => {
-                  setAction("reject");
-                  setError("");
+                  onVerify("reject");
+                  handleClose();
                 }}
-                className={`p-4 rounded-lg border-2 transition-all ${
-                  action === "reject"
-                    ? "bg-red-500/20 border-red-500 shadow-lg shadow-red-500/20"
-                    : "bg-white/5 border-white/10 hover:bg-red-500/10 hover:border-red-500/30"
-                }`}
+                className="p-4 rounded-lg border-2 transition-all bg-white/5 border-white/10 hover:bg-red-500/10 hover:border-red-500/30"
               >
-                <XCircle
-                  className={`w-8 h-8 mx-auto mb-2 ${
-                    action === "reject" ? "text-red-400" : "text-gray-400"
-                  }`}
-                />
-                <p
-                  className={`text-sm font-medium ${
-                    action === "reject" ? "text-red-400" : "text-gray-400"
-                  }`}
-                >
+                <XCircle className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                <p className="text-sm font-medium text-gray-400">
                   Reject
                 </p>
               </button>
             </div>
           </div>
-
-          {/* Rejection Reason */}
-          {action === "reject" && (
-            <div className="space-y-2 animate-in fade-in duration-200">
-              <Label className="text-white">Reason for Rejection *</Label>
-              <Textarea
-                value={rejectionReason}
-                onChange={(e) => {
-                  setRejectionReason(e.target.value);
-                  setError("");
-                }}
-                placeholder="Explain why this document is being rejected..."
-                className="min-h-[100px] bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-purple-400"
-              />
-              <p className="text-xs text-gray-400">
-                Be specific and clear so the user can correct and resubmit.
-              </p>
-            </div>
-          )}
 
           {/* Error Message */}
           {error && (

@@ -37,8 +37,8 @@ export interface Document {
   id: string;
   name: string;
   type: "file" | "folder";
-  fileType?: string;
-  size?: number;
+  fileType: string;
+  size: number;
   status?: "verified" | "pending" | "rejected";
   uploadedAt: string;
   thumbnailUrl?: string;

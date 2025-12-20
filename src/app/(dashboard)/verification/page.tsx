@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { VerificationCard } from "@/components/verification/VerificationCard";
 import { VerifyModal } from "@/components/verification/VerifyModal";
-import { Button } from "@/components/ui/button"; 
 import { RejectModal } from "@/components/verification/RejectModal";
 import { VerificationTimeline } from "@/components/verification/VerificationTimeline";
 
@@ -31,13 +30,20 @@ export default function TestVerificationPage() {
 
   const handleVerify = (action: "approve" | "reject", reason?: string) => {
     console.log("Action:", action);
+    if (action === "reject") {
+      setVerifyModalOpen(false);
+      setRejectModalOpen(true);
+      return;
+    }
     if (reason) console.log("Reason:", reason);
     alert(`Document ${action}d${reason ? ` with reason: ${reason}` : ""}`);
+    setVerifyModalOpen(false);
   };
 
   const handleReject = (reason: string) => {
     console.log("Rejection reason:", reason);
     alert(`Document rejected with reason: ${reason}`);
+    setRejectModalOpen(false);
   };
 
   const sampleTimelineEvents = [
@@ -83,7 +89,6 @@ export default function TestVerificationPage() {
         </h1>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Pending */}
           <VerificationCard
             documentId="1"
             documentName="Degree Certificate.pdf"
@@ -93,7 +98,6 @@ export default function TestVerificationPage() {
             onViewDetails={handleViewDetails}
           />
 
-          {/* In Review */}
           <VerificationCard
             documentId="2"
             documentName="Transcript.pdf"
@@ -103,7 +107,6 @@ export default function TestVerificationPage() {
             onViewDetails={handleViewDetails}
           />
 
-          {/* Verified */}
           <VerificationCard
             documentId="3"
             documentName="ID Card.jpg"
@@ -113,7 +116,6 @@ export default function TestVerificationPage() {
             onViewDetails={handleViewDetails}
           />
 
-          {/* Rejected */}
           <VerificationCard
             documentId="4"
             documentName="Birth Certificate.pdf"
@@ -126,25 +128,13 @@ export default function TestVerificationPage() {
           />
         </div>
 
-        {/* Test Reject Modal Button */}
-        <div className="flex justify-center">
-          <Button
-            onClick={() => setRejectModalOpen(true)}
-            className="bg-red-600 hover:bg-red-700"
-          >
-            Test Reject Modal
-          </Button>
-        </div>
-
-         {/* Timeline Section */}
-         <div className="mt-12 space-y-6">
+        <div className="mt-12 space-y-6">
           <h2 className="text-2xl font-bold text-white">Verification Timeline</h2>
           <div className="p-6 bg-white/5 border border-white/10 rounded-xl">
             <VerificationTimeline events={sampleTimelineEvents} />
           </div>
         </div>
 
-        {/* Verify Modal */}
         {selectedDoc && (
           <VerifyModal
             isOpen={verifyModalOpen}
@@ -159,7 +149,7 @@ export default function TestVerificationPage() {
           isOpen={rejectModalOpen}
           onClose={() => setRejectModalOpen(false)}
           onReject={handleReject}
-          documentName="Test Document.pdf"
+          documentName={selectedDoc?.name || "Document"}
         />
       </div>
     </div>
