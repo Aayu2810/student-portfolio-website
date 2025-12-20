@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Lock, Globe, Users } from 'lucide-react'
+import { X, Lock, Globe, Users, Calendar } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -19,6 +19,7 @@ export interface AccessSettings {
   allowPrint: boolean
   allowShare: boolean
   expiryDays: number | null
+  expiryDate: Date | null
   accessLevel: 'view' | 'edit' | 'full'
 }
 
@@ -33,6 +34,8 @@ export function AccessControlModal({
   const [allowPrint, setAllowPrint] = useState(true)
   const [allowShare, setAllowShare] = useState(false)
   const [expiryDays, setExpiryDays] = useState<number | null>(null)
+  const [expiryDate, setExpiryDate] = useState<Date | null>(null)
+  const [expiryMode, setExpiryMode] = useState<'preset' | 'custom'>('preset')
   const [accessLevel, setAccessLevel] = useState<'view' | 'edit' | 'full'>('view')
 
   if (!isOpen) return null
@@ -44,6 +47,7 @@ export function AccessControlModal({
       allowPrint,
       allowShare,
       expiryDays,
+      expiryDate,
       accessLevel,
     })
   }
@@ -183,18 +187,63 @@ export function AccessControlModal({
 
           {/* Expiry */}
           <div className="space-y-3">
-            <label className="text-sm font-medium text-white">Link Expiry</label>
-            <select
-              value={expiryDays?.toString() || ""}
-              onChange={(e) => setExpiryDays(e.target.value ? Number(e.target.value) : null)}
-              className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-purple-500"
-            >
-              <option value="">Never</option>
-              <option value="1">1 Day</option>
-              <option value="7">7 Days</option>
-              <option value="30">30 Days</option>
-              <option value="90">90 Days</option>
-            </select>
+            <label className="text-sm font-medium text-white flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              Link Expiry
+            </label>
+            
+            {/* Expiry Mode Toggle */}
+            <div className="flex gap-2 mb-3">
+              <button
+                onClick={() => setExpiryMode('preset')}
+                className={cn(
+                  "flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all",
+                  expiryMode === 'preset'
+                    ? "bg-purple-600 text-white"
+                    : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                )}
+              >
+                Preset
+              </button>
+              <button
+                onClick={() => setExpiryMode('custom')}
+                className={cn(
+                  "flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all",
+                  expiryMode === 'custom'
+                    ? "bg-purple-600 text-white"
+                    : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                )}
+              >
+                Custom Date
+              </button>
+            </div>
+
+            {expiryMode === 'preset' ? (
+              <select
+                value={expiryDays?.toString() || ""}
+                onChange={(e) => {
+                  setExpiryDays(e.target.value ? Number(e.target.value) : null)
+                  setExpiryDate(null)
+                }}
+                className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-purple-500"
+              >
+                <option value="">Never</option>
+                <option value="1">1 Day</option>
+                <option value="7">7 Days</option>
+                <option value="30">30 Days</option>
+                <option value="90">90 Days</option>
+              </select>
+            ) : (
+              <input
+                type="datetime-local"
+                value={expiryDate ? new Date(expiryDate.getTime() - expiryDate.getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''}
+                onChange={(e) => {
+                  setExpiryDate(e.target.value ? new Date(e.target.value) : null)
+                  setExpiryDays(null)
+                }}
+                className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-purple-500"
+              />
+            )}
           </div>
 
           {/* Action Buttons */}

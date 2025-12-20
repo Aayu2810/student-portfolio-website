@@ -14,8 +14,6 @@ import { Grid, List } from "lucide-react";
 import { Document, BreadcrumbItem } from "@/types/locker.types";
 import { ShareModal } from "@/components/sharing/ShareModal";
 import { QRDisplay } from "@/components/sharing/QRDisplay";
-import { ShareLinkCopy } from "@/components/sharing/ShareLinkCopy";
-import { ShareExpiry } from "@/components/sharing/ShareExpiry";
 import { UploadZone } from "@/components/upload/UploadZone";
 import { DocumentCategory } from "@/components/upload/DocumentCategory";
 import { UploadModal } from "@/components/upload/UploadModal";
@@ -286,74 +284,6 @@ export default function TestLockerPage() {
             url="https://campuscred.com/shared/degree-certificate-123"
             title="Share: Degree Certificate"
             size={200}
-          />
-        </div>
-
-        {/* Share Link Copy Buttons */}
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-white">
-            Share Link Copy Buttons
-          </h2>
-          <div className="p-6 bg-white/5 border border-white/10 rounded-xl space-y-4">
-            <div className="space-y-2">
-              <p className="text-sm text-gray-400">Size Variants:</p>
-              <div className="flex flex-wrap gap-3">
-                <ShareLinkCopy
-                  url="https://campuscred.com/shared/doc-123"
-                  size="sm"
-                  label="Small"
-                />
-                <ShareLinkCopy
-                  url="https://campuscred.com/shared/doc-123"
-                  size="md"
-                  label="Medium"
-                />
-                <ShareLinkCopy
-                  url="https://campuscred.com/shared/doc-123"
-                  size="lg"
-                  label="Large"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-sm text-gray-400">Style Variants:</p>
-              <div className="flex flex-wrap gap-3">
-                <ShareLinkCopy
-                  url="https://campuscred.com/shared/doc-123"
-                  variant="outline"
-                  label="Outline"
-                />
-                <ShareLinkCopy
-                  url="https://campuscred.com/shared/doc-123"
-                  variant="default"
-                  label="Default"
-                />
-                <ShareLinkCopy
-                  url="https://campuscred.com/shared/doc-123"
-                  variant="ghost"
-                  label="Ghost"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-sm text-gray-400">Without Icon:</p>
-              <ShareLinkCopy
-                url="https://campuscred.com/shared/doc-123"
-                showIcon={false}
-                label="Copy Share Link"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Share Expiry */}
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-white">Share Expiry</h2>
-          <ShareExpiry
-            expiryDate={expiryDate}
-            onExpiryChange={handleExpiryChange}
           />
         </div>
 
