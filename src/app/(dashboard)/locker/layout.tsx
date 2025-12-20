@@ -1,18 +1,12 @@
 'use client'
 
 import { ReactNode, useState, useEffect } from 'react'
-import { Search, Grid, List, Upload, FolderPlus } from 'lucide-react'
+import { Search, Grid, List, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 
 export default function LockerLayout({ children }: { children: ReactNode }) {
   const router = useRouter()
-  
-  // We need to access the parent component's state to open the modal
-  // For now, we'll just show an alert
-  const handleCreateFolder = () => {
-    alert('Create folder functionality would open here')
-  }
   
   const handleUpload = () => {
     // Try to find and trigger the upload modal in the child component
@@ -34,17 +28,10 @@ export default function LockerLayout({ children }: { children: ReactNode }) {
             
             <div className="flex flex-wrap gap-3">
               <Button 
-                onClick={handleCreateFolder}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 shadow-[0_8px_32px_rgba(139,92,246,0.15)] border border-[rgba(139,92,246,0.4)]"
-              >
-                <FolderPlus className="w-5 h-5" />
-                <span>Create Folder</span>
-              </Button>
-              <Button 
                 onClick={handleUpload}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 shadow-[0_8px_32px_rgba(139,92,246,0.15)] border border-[rgba(139,92,246,0.4)]"
+                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-all duration-300 shadow-[0_8px_32px_rgba(139,92,246,0.15)] border border-[rgba(139,92,246,0.4)] text-base font-medium"
               >
-                <Upload className="w-5 h-5" />
+                <Upload className="w-6 h-6" />
                 <span>Upload</span>
               </Button>
             </div>

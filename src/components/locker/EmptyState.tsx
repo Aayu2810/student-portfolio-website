@@ -7,14 +7,12 @@ interface EmptyStateProps {
   type?: "no-documents" | "no-results" | "no-folder";
   searchQuery?: string;
   onUpload?: () => void;
-  onCreateFolder?: () => void;
 }
 
 export function EmptyState({
   type = "no-documents",
   searchQuery,
   onUpload,
-  onCreateFolder,
 }: EmptyStateProps) {
   const getContent = () => {
     switch (type) {
@@ -32,30 +30,16 @@ export function EmptyState({
         return {
           icon: <FolderPlus className="w-20 h-20 text-purple-400/50" />,
           title: "This folder is empty",
-          description: "Start organizing by uploading documents or creating subfolders.",
-          actions: (
-            <div className="flex gap-3">
-              {onUpload && (
-                <Button
-                  onClick={onUpload}
-                  className="bg-purple-600 hover:bg-purple-700 text-white"
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Upload Documents
-                </Button>
-              )}
-              {onCreateFolder && (
-                <Button
-                  onClick={onCreateFolder}
-                  variant="outline"
-                  className="border-white/10 hover:bg-white/10"
-                >
-                  <FolderPlus className="w-4 h-4 mr-2" />
-                  Create Folder
-                </Button>
-              )}
-            </div>
-          ),
+          description: "Start organizing by uploading documents to this folder.",
+          actions: onUpload ? (
+            <Button
+              onClick={onUpload}
+              className="bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Upload Documents
+            </Button>
+          ) : null,
         };
 
       case "no-documents":
@@ -65,29 +49,15 @@ export function EmptyState({
           title: "Your locker is empty",
           description:
             "Upload your first document to get started. You can store certificates, transcripts, and important files securely.",
-          actions: (
-            <div className="flex gap-3">
-              {onUpload && (
-                <Button
-                  onClick={onUpload}
-                  className="bg-purple-600 hover:bg-purple-700 text-white"
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Upload Your First Document
-                </Button>
-              )}
-              {onCreateFolder && (
-                <Button
-                  onClick={onCreateFolder}
-                  variant="outline"
-                  className="border-white/10 hover:bg-white/10"
-                >
-                  <FolderPlus className="w-4 h-4 mr-2" />
-                  Create Folder
-                </Button>
-              )}
-            </div>
-          ),
+          actions: onUpload ? (
+            <Button
+              onClick={onUpload}
+              className="bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Upload Your First Document
+            </Button>
+          ) : null,
         };
     }
   };
