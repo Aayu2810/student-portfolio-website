@@ -13,7 +13,7 @@ import { EmptyState } from "@/components/locker/EmptyState";
 import { Grid, List } from "lucide-react";
 import { Document, BreadcrumbItem } from "@/types/locker.types";
 import { ShareModal } from "@/components/sharing/ShareModal";
-import { QRDisplay } from "@/components/sharing/QRDisplay";
+import { DocumentSharing } from "@/components/sharing/DocumentSharing";
 import { UploadZone } from "@/components/upload/UploadZone";
 import { DocumentCategory } from "@/components/upload/DocumentCategory";
 import { UploadModal } from "@/components/upload/UploadModal";
@@ -277,14 +277,10 @@ export default function TestLockerPage() {
           />
         </div>
 
-        {/* QR Code Test */}
+        {/* Sharing Documents */}
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-white">QR Code Display</h2>
-          <QRDisplay
-            url="https://campuscred.com/shared/degree-certificate-123"
-            title="Share: Degree Certificate"
-            size={200}
-          />
+          <h2 className="text-2xl font-bold text-white">Sharing Documents</h2>
+          <DocumentSharing documents={sampleDocuments} />
         </div>
 
         {/* Breadcrumb */}
