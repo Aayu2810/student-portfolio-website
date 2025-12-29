@@ -169,6 +169,12 @@ export default function RegisterPage() {
                 Sign in
               </Link>
             </p>
+            <p className="text-gray-400 text-sm mt-2">
+              Faculty?{' '}
+              <Link href="/faculty-login" className="text-purple-400 hover:text-purple-300 font-medium">
+                Login here
+              </Link>
+            </p>
           </div>
         </div>
       </div>

@@ -1,11 +1,13 @@
 -- Create Category Tags Table
-CREATE TABLE IF NOT EXISTS category_tags (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name VARCHAR(100) NOT NULL UNIQUE,
+CREATE TABLE category_tags (
+  id UUID NOT NULL DEFAULT uuid_generate_v4(),
+  name CHARACTER VARYING NOT NULL UNIQUE,
   description TEXT,
-  color VARCHAR(7), -- Hex color code
-  icon VARCHAR(50),
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  color CHARACTER VARYING,
+  icon CHARACTER VARYING,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT category_tags_pkey PRIMARY KEY (id)
 );
 
 -- Insert default categories

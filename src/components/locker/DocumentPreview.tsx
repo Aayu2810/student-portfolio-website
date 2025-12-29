@@ -159,7 +159,7 @@ export function DocumentPreview({
             ) : doc.fileUrl ? (
               // For PDFs or other documents
               <iframe
-                src={doc.fileUrl}
+                src={doc.status === 'verified' && doc.fileType === 'application/pdf' ? `/api/preview/${doc.id}` : doc.fileUrl}
                 className="w-full h-[500px] rounded-lg bg-white"
                 title={doc.name}
               />

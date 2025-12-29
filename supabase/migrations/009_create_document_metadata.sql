@@ -1,13 +1,20 @@
 -- Create Document Metadata Table
-CREATE TABLE IF NOT EXISTS document_metadata (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
-  tags TEXT[],
-  custom_fields JSONB,
-  extracted_text TEXT, -- For search indexing
-  thumbnail_url TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+CREATE TABLE document_metadata (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  document_id uuid NOT NULL,
+  checksum text,
+  tags TEXT[] DEFAULT '{}'::text[],
+  custom_fields jsonb DEFAULT '{}'::jsonb,
+  extracted_text text,
+  language text,
+  page_count integer,
+  process_status text NOT NULL DEFAULT 'pending'::text,
+  thumbnail_url text,
+  search_vector tsvector,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT document_metadata_pkey PRIMARY KEY (id),
+  CONSTRAINT document_metadata_document_id_fkey FOREIGN KEY (document_id) REFERENCES documents(id)
 );
 
 -- Create indexes

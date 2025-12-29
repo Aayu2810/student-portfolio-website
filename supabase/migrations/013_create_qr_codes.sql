@@ -1,13 +1,13 @@
 -- Create QR Codes Table
-CREATE TABLE IF NOT EXISTS qr_codes (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  share_link_id UUID NOT NULL REFERENCES shared_links(id) ON DELETE CASCADE,
-  qr_data TEXT NOT NULL, -- Base64 encoded QR code image
-  created_at TIMESTAMPTZ DEFAULT NOW()
+CREATE TABLE qr_codes (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  share_link_id UUID NOT NULL REFERENCES share_links(id) ON DELETE CASCADE,
+  qr_data TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 
 -- Create index
-CREATE INDEX idx_qr_codes_share_link_id ON qr_codes(share_link_id);
+CREATE INDEX qr_codes_share_link_id_idx ON qr_codes(share_link_id);
 
 -- Enable RLS
 ALTER TABLE qr_codes ENABLE ROW LEVEL SECURITY;
@@ -16,26 +16,26 @@ ALTER TABLE qr_codes ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view QR codes for own shares" ON qr_codes
   FOR SELECT USING (
     EXISTS (
-      SELECT 1 FROM shared_links
-      WHERE shared_links.id = qr_codes.share_link_id
-      AND shared_links.created_by = auth.uid()
+      SELECT 1 FROM share_links
+      WHERE share_links.id = qr_codes.share_link_id
+      AND share_links.user_id = auth.uid()
     )
   );
 
 CREATE POLICY "Users can create QR codes for own shares" ON qr_codes
   FOR INSERT WITH CHECK (
     EXISTS (
-      SELECT 1 FROM shared_links
-      WHERE shared_links.id = qr_codes.share_link_id
-      AND shared_links.created_by = auth.uid()
+      SELECT 1 FROM share_links
+      WHERE share_links.id = qr_codes.share_link_id
+      AND share_links.user_id = auth.uid()
     )
   );
 
 CREATE POLICY "Users can delete QR codes for own shares" ON qr_codes
   FOR DELETE USING (
     EXISTS (
-      SELECT 1 FROM shared_links
-      WHERE shared_links.id = qr_codes.share_link_id
-      AND shared_links.created_by = auth.uid()
+      SELECT 1 FROM share_links
+      WHERE share_links.id = qr_codes.share_link_id
+      AND share_links.user_id = auth.uid()
     )
   );

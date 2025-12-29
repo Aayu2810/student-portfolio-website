@@ -19,6 +19,7 @@ interface RejectModalProps {
   onClose: () => void;
   onReject: (reason: string) => void;
   documentName: string;
+  canReject?: boolean;
 }
 
 export function RejectModal({
@@ -26,6 +27,7 @@ export function RejectModal({
   onClose,
   onReject,
   documentName,
+  canReject = true,
 }: RejectModalProps) {
   const [rejectionReason, setRejectionReason] = useState("");
   const [error, setError] = useState("");
@@ -75,57 +77,59 @@ export function RejectModal({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {/* Warning Message */}
-          <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-start gap-2">
-            <AlertTriangle className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-amber-300">
-              The user will be notified and asked to resubmit. Be specific so they can correct the issue.
-            </p>
-          </div>
+          <>
+              {/* Warning Message */}
+              <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-start gap-2">
+                <AlertTriangle className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
+                <p className="text-sm text-amber-300">
+                  The user will be notified and asked to resubmit. Be specific so they can correct the issue.
+                </p>
+              </div>
 
-          {/* Quick Reasons */}
-          <div className="space-y-2">
-            <Label className="text-white">Common Reasons (Click to select)</Label>
-            <div className="grid grid-cols-2 gap-2">
-              {commonReasons.map((reason, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleQuickSelect(reason)}
-                  className={`p-2 text-sm text-left rounded-lg border transition-all ${
-                    rejectionReason === reason
-                      ? "bg-red-500/20 border-red-500/50 text-red-300"
-                      : "bg-white/5 border-white/10 text-gray-300 hover:bg-red-500/10 hover:border-red-500/30"
-                  }`}
-                >
-                  {reason}
-                </button>
-              ))}
-            </div>
-          </div>
+              {/* Quick Reasons */}
+              <div className="space-y-2">
+                <Label className="text-white">Common Reasons (Click to select)</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {commonReasons.map((reason, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleQuickSelect(reason)}
+                      className={`p-2 text-sm text-left rounded-lg border transition-all ${
+                        rejectionReason === reason
+                          ? "bg-red-500/20 border-red-500/50 text-red-300"
+                          : "bg-white/5 border-white/10 text-gray-300 hover:bg-red-500/10 hover:border-red-500/30"
+                      }`}
+                    >
+                      {reason}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-          {/* Custom Reason */}
-          <div className="space-y-2">
-            <Label className="text-white">Rejection Reason *</Label>
-            <Textarea
-              value={rejectionReason}
-              onChange={(e) => {
-                setRejectionReason(e.target.value);
-                setError("");
-              }}
-              placeholder="Provide a detailed reason for rejection or select from common reasons above..."
-              className="min-h-[120px] bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-red-400"
-            />
-            <p className="text-xs text-gray-400">
-              Be clear and specific so the user knows exactly what needs to be fixed.
-            </p>
-          </div>
+              {/* Custom Reason */}
+              <div className="space-y-2">
+                <Label className="text-white">Rejection Reason *</Label>
+                <Textarea
+                  value={rejectionReason}
+                  onChange={(e) => {
+                    setRejectionReason(e.target.value);
+                    setError("");
+                  }}
+                  placeholder="Provide a detailed reason for rejection or select from common reasons above..."
+                  className="min-h-[120px] bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-red-400"
+                />
+                <p className="text-xs text-gray-400">
+                  Be clear and specific so the user knows exactly what needs to be fixed.
+                </p>
+              </div>
 
-          {/* Error Message */}
-          {error && (
-            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-              <p className="text-sm text-red-400">{error}</p>
-            </div>
-          )}
+              {/* Error Message */}
+              {error && (
+                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                  <p className="text-sm text-red-400">{error}</p>
+                </div>
+              )}
+          </>
         </div>
 
         <DialogFooter>
@@ -135,8 +139,9 @@ export function RejectModal({
             onClick={handleClose}
             className="border-white/10 hover:bg-white/10"
           >
-            Cancel
+            Close
           </Button>
+          {canReject && (
           <Button
             onClick={handleSubmit}
             className="bg-red-600 hover:bg-red-700 text-white"
@@ -144,6 +149,7 @@ export function RejectModal({
             <XCircle className="w-4 h-4 mr-2" />
             Reject Document
           </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

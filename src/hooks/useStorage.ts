@@ -14,7 +14,7 @@ export function useStorage(): StorageInfo {
   const { user } = useUser()
   const [storage, setStorage] = useState<StorageInfo>({
     used: 0,
-    total: 5 * 1024 * 1024 * 1024, // 5GB default
+    total: 6 * 1024 * 1024 * 1024, // 5GB default
     percentage: 0,
   })
 

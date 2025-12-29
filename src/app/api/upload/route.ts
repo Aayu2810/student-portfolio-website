@@ -23,10 +23,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
     }
 
-    // Check file size (max 10MB)
-    const maxSize = 10 * 1024 * 1024 // 10MB
+    // Validate category against allowed values
+    const allowedCategories = ['resume', 'certificate', 'transcript', 'project', 'other'];
+    const validCategory = allowedCategories.includes(category) ? category : 'other';
+
+    // Check file size (max 50MB)
+    const maxSize = 50 * 1024 * 1024 // 50MB
     if (file.size > maxSize) {
-      return NextResponse.json({ error: 'File size exceeds 10MB' }, { status: 400 })
+      return NextResponse.json({ error: 'File size exceeds 50MB' }, { status: 400 })
     }
 
     // Check storage limit
@@ -63,14 +67,14 @@ export async function POST(request: NextRequest) {
       .from('documents')
       .getPublicUrl(filePath)
 
-    // Insert document record
+    // Insert document record - using RPC or bypass RLS if needed
     const { data: document, error: dbError } = await supabase
       .from('documents')
       .insert({
         user_id: user.id,
         title: title || file.name,
         description: description || null,
-        category: category || 'other',
+        category: validCategory,
         tags: tags ? tags.split(',').map(t => t.trim()) : [],
         file_url: publicUrl,
         file_name: file.name,
@@ -78,16 +82,25 @@ export async function POST(request: NextRequest) {
         file_size: file.size,
         storage_path: filePath,
         is_public: false,
-        is_favorite: false
+        is_favorite: false,
+        views: 0,
+        downloads: 0,
+        thumbnail_url: null
       })
       .select()
       .single()
 
     if (dbError) {
       console.error('Database error:', dbError)
+      // Check if it's a constraint violation or other error
+      console.error('Error details:', dbError.details, dbError.message, dbError.code)
+      // Check if this is an RLS error
+      if (dbError.code === '42501' || dbError.message.includes('permission') || dbError.message.includes('RLS')) {
+        console.error('This appears to be an RLS permission error');
+      }
       // Cleanup uploaded file
       await supabase.storage.from('documents').remove([filePath])
-      return NextResponse.json({ error: 'Failed to save document record' }, { status: 500 })
+      return NextResponse.json({ error: `Failed to save document record: ${dbError.message}` }, { status: 500 })
     }
 
     // Update storage usage
@@ -103,9 +116,9 @@ export async function POST(request: NextRequest) {
       document 
     }, { status: 200 })
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Server error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: `Internal server error: ${error.message}` }, { status: 500 })
   }
 }
 
@@ -118,18 +131,38 @@ export async function GET(request: NextRequest) {
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-
-    const { data: documents, error } = await supabase
+    
+    // Get pagination parameters
+    const url = new URL(request.url);
+    const page = parseInt(url.searchParams.get('page') || '1');
+    const limit = parseInt(url.searchParams.get('limit') || '20');
+    const offset = (page - 1) * limit;
+    
+    const { data: documents, error, count } = await supabase
       .from('documents')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ documents }, { status: 200 })
+    const response = NextResponse.json({ 
+      documents, 
+      pagination: { 
+        page, 
+        limit, 
+        total: count,
+        hasMore: offset + limit < (count || 0)
+      } 
+    }, { status: 200 });
+    
+    // Add caching headers
+    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
+    
+    return response;
 
   } catch (error) {
     console.error('Server error:', error)

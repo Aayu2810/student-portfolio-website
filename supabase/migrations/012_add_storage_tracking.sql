@@ -1,10 +1,12 @@
 -- Add Storage Tracking Table
-CREATE TABLE IF NOT EXISTS storage_usage (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
-  used_bytes BIGINT DEFAULT 0,
-  limit_bytes BIGINT DEFAULT 104857600, -- 100MB default limit
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+CREATE TABLE storage_usage (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL UNIQUE,
+  used_bytes bigint NOT NULL DEFAULT 0,
+  limit_bytes bigint NOT NULL DEFAULT 104857600,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT storage_usage_pkey PRIMARY KEY (id),
+  CONSTRAINT storage_usage_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
 );
 
 -- Create index

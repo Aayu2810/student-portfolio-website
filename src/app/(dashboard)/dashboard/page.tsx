@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { FileText, CheckCircle, Share2, Eye } from 'lucide-react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
+import { FileText, CheckCircle, Share2, User, QrCode, Copy, Check } from 'lucide-react'
+import { AttestedModal } from '../../../components/AttestedModal'
 import { useDocuments } from '../../../hooks/useDocuments'
 import { useUser } from '../../../hooks/useUser'
 import { createClient } from '../../../lib/supabase/client'
@@ -12,6 +13,13 @@ export default function DashboardPage() {
   const { user, profile } = useUser()
   const supabase = createClient()
   const [totalShares, setTotalShares] = useState(0)
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [shareLink, setShareLink] = useState('')
+  const [expiresIn, setExpiresIn] = useState('24')
+  const [copied, setCopied] = useState(false)
+  const [qrDataUrl, setQrDataUrl] = useState('')
+  const [showAttestedModal, setShowAttestedModal] = useState(false)
+  const [selectedDocument, setSelectedDocument] = useState<any>(null)
 
   useEffect(() => {
     const fetchShares = async () => {
@@ -25,34 +33,71 @@ export default function DashboardPage() {
     fetchShares()
   }, [user])
 
-  const stats = [
+  const generateShareLink = async () => {
+    if (!user) return;
+    
+    try {
+      // Generate a temporary share link for the user's documents
+      const tempShareCode = Math.random().toString(36).substring(2, 10);
+      const generatedLink = `https://student-portfolio-website-seven.vercel.app/shared/${tempShareCode}`;
+      
+      setShareLink(generatedLink);
+      
+      // Generate QR code
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(generatedLink)}`;
+      setQrDataUrl(qrUrl);
+    } catch (error) {
+      console.error('Error generating share link:', error);
+    }
+  };
+
+  const viewAttestedDocument = async (doc: any) => {
+    setSelectedDocument(doc);
+    setShowAttestedModal(true);
+  };
+
+  const copyToClipboard = useCallback(() => {
+    navigator.clipboard.writeText(shareLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [shareLink]);
+
+  const stats = useMemo(() => [
     {
       icon: <FileText className="w-8 h-8" />,
       label: 'Total Documents',
       value: documents.length.toString(),
-      color: 'from-blue-500 to-cyan-500'
+      color: 'from-blue-500 to-cyan-500',
+      href: '/documents'
     },
     {
       icon: <CheckCircle className="w-8 h-8" />,
       label: 'Verified',
       value: documents.filter(d => d.is_public).length.toString(),
-      color: 'from-green-500 to-emerald-500'
+      color: 'from-green-500 to-emerald-500',
+      href: '/verification'
     },
     {
       icon: <Share2 className="w-8 h-8" />,
       label: 'Shared Links',
       value: totalShares.toString(),
-      color: 'from-purple-500 to-pink-500'
+      color: 'from-purple-500 to-pink-500',
+      onClick: () => {
+        generateShareLink();
+        setShowShareModal(true);
+      }
     },
     {
-      icon: <Eye className="w-8 h-8" />,
-      label: 'Total Views',
-      value: documents.reduce((sum, d) => sum + d.views, 0).toString(),
-      color: 'from-orange-500 to-red-500'
-    }
-  ]
+      icon: <User className="w-8 h-8" />, 
+      label: 'Profile',
+      value: 'View',
+      color: 'from-orange-500 to-red-500',
+      href: '/profile'
+    },
 
-  const recentDocs = documents.slice(0, 5)
+  ], [documents, totalShares, generateShareLink, setShowShareModal]);
+
+  const recentDocs = useMemo(() => documents.slice(0, 5), [documents]);
 
   if (loading) {
     return (
@@ -78,7 +123,16 @@ export default function DashboardPage() {
           {stats.map((stat, index) => (
             <div
               key={index}
-              className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition-all hover:transform hover:scale-105"
+              onClick={() => {
+                if (stat.onClick) {
+                  stat.onClick();
+                } else if (stat.href) {
+                  window.location.href = stat.href;
+                }
+              }}
+              className={`bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition-all hover:transform hover:scale-105 cursor-pointer ${
+                stat.href ? 'cursor-pointer' : ''
+              }`}
             >
               <div className={`inline-flex p-3 rounded-lg bg-gradient-to-br ${stat.color} mb-4`}>
                 {stat.icon}
@@ -102,7 +156,7 @@ export default function DashboardPage() {
               View All →
             </Link>
           </div>
-          
+
           {recentDocs.length === 0 ? (
             <div className="text-center py-16">
               <div className="w-20 h-20 bg-gray-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -121,8 +175,8 @@ export default function DashboardPage() {
               {recentDocs.map((doc) => (
                 <Link
                   key={doc.id}
-                  href="/documents"
-                  className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg hover:bg-gray-800/50 transition-all group"
+                  href={`/document/${doc.id}`}
+                  className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg hover:bg-gray-800/50 transition-all group cursor-pointer"
                 >
                   <div className="flex items-center gap-4 flex-1 min-w-0">
                     <div className="w-10 h-10 bg-purple-600/20 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -140,19 +194,25 @@ export default function DashboardPage() {
                             Verified
                           </span>
                         )}
+                        {doc.is_public && (
+                          <button
+                            onClick={() => viewAttestedDocument(doc)}
+                            className="flex items-center gap-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-lg transition-colors"
+                          >
+                            <Check className="w-3 h-3" />
+                            View Attested Document
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
                   <div className="text-right ml-4">
                     <p className="text-gray-500 text-xs whitespace-nowrap">
-                      {new Date(doc.created_at).toLocaleDateString('en-US', { 
-                        month: 'short', 
+                      {new Date(doc.created_at).toLocaleDateString('en-US', {
+                        month: 'short',
                         day: 'numeric',
                         year: 'numeric'
                       })}
-                    </p>
-                    <p className="text-gray-600 text-xs mt-1">
-                      {doc.views} views
                     </p>
                   </div>
                 </Link>
@@ -160,6 +220,15 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
+
+        <AttestedModal
+          isOpen={showAttestedModal}
+          onClose={() => {
+            setShowAttestedModal(false);
+            setSelectedDocument(null);
+          }}
+          document={selectedDocument}
+        />
       </div>
     </div>
   )

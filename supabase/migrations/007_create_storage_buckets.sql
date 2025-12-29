@@ -23,6 +23,17 @@ CREATE POLICY "Users can view own documents"
     )
   );
 
+CREATE POLICY "Public can view verified documents"
+  ON storage.objects FOR SELECT
+  USING (
+    bucket_id = 'documents' AND
+    name IN (
+      SELECT storage_path
+      FROM documents
+      WHERE is_public = true
+    )
+  );
+
 CREATE POLICY "Users can delete own documents"
   ON storage.objects FOR DELETE
   USING (

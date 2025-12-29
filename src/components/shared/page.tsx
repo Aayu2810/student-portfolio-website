@@ -160,7 +160,7 @@ export default function SharedDocumentsPage() {
                 </div>
 
                 <a
-                  href={doc.file_url}
+                  href={`/api/download/${doc.id}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg transition-all"

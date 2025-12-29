@@ -15,6 +15,8 @@ interface VerificationCardProps {
   rejectionReason?: string;
   onViewDetails: (docId: string) => void;
   onReupload?: (docId: string) => void;
+  onViewDocument?: (docId: string) => void;
+  onDownloadDocument?: (docId: string) => void;
 }
 
 export function VerificationCard({
@@ -26,6 +28,8 @@ export function VerificationCard({
   rejectionReason,
   onViewDetails,
   onReupload,
+  onViewDocument,
+  onDownloadDocument,
 }: VerificationCardProps) {
   const getStatusConfig = () => {
     switch (status) {
@@ -142,15 +146,35 @@ export function VerificationCard({
             onClick={() => onViewDetails(documentId)}
             variant="outline"
             size="sm"
-            className="flex-1 border-white/10 hover:bg-purple-400/20 hover:border-purple-400/30"
+            className="border-white/10 hover:bg-purple-400/20 hover:border-purple-400/30"
           >
             View Details
           </Button>
+          {onViewDocument && (
+            <Button
+              onClick={() => onViewDocument(documentId)}
+              variant="outline"
+              size="sm"
+              className="border-white/10 hover:bg-blue-400/20 hover:border-blue-400/30"
+            >
+              View
+            </Button>
+          )}
+          {onDownloadDocument && (
+            <Button
+              onClick={() => onDownloadDocument(documentId)}
+              variant="outline"
+              size="sm"
+              className="border-white/10 hover:bg-green-400/20 hover:border-green-400/30"
+            >
+              Download
+            </Button>
+          )}
           {status === "rejected" && onReupload && (
             <Button
               onClick={() => onReupload(documentId)}
               size="sm"
-              className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+              className="bg-purple-600 hover:bg-purple-700 text-white"
             >
               Reupload
             </Button>

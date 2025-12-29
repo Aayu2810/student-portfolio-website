@@ -5,23 +5,20 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE profiles (
   id UUID REFERENCES auth.users(id) PRIMARY KEY,
   email TEXT UNIQUE NOT NULL,
-  full_name TEXT NOT NULL,
-  
-  -- User Type
-  role TEXT NOT NULL CHECK (role IN ('student', 'faculty', 'admin')),
-  
-  -- Student-specific
-  student_id TEXT UNIQUE, -- Roll number
-  department TEXT,
-  batch_year INTEGER,
-  
-  -- Faculty-specific
-  faculty_id TEXT UNIQUE,
-  designation TEXT,
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
   
   -- Profile
   avatar_url TEXT,
+  bio TEXT,
   phone TEXT,
+  portfolio_url TEXT UNIQUE,
+  linkedin_url TEXT,
+  github_url TEXT,
+  twitter_url TEXT,
+  website_url TEXT,
+  storage_used BIGINT DEFAULT 0,
+  storage_limit BIGINT DEFAULT 524288000,
   
   -- Metadata
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -29,9 +26,9 @@ CREATE TABLE profiles (
 );
 
 -- Indexes
-CREATE INDEX profiles_role_idx ON profiles(role);
-CREATE INDEX profiles_student_id_idx ON profiles(student_id);
-CREATE INDEX profiles_department_idx ON profiles(department);
+CREATE INDEX profiles_first_name_idx ON profiles(first_name);
+CREATE INDEX profiles_last_name_idx ON profiles(last_name);
+CREATE INDEX profiles_email_idx ON profiles(email);
 
 -- Enable RLS
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
@@ -44,14 +41,6 @@ CREATE POLICY "Users can view own profile"
 CREATE POLICY "Users can update own profile"
   ON profiles FOR UPDATE
   USING (auth.uid() = id);
-
-CREATE POLICY "Faculty can view student profiles"
-  ON profiles FOR SELECT
-  USING (
-    auth.uid() IN (
-      SELECT id FROM profiles WHERE role = 'faculty'
-    )
-  );
 
 -- Updated at trigger
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -71,12 +60,12 @@ CREATE TRIGGER update_profiles_updated_at
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, email, full_name, role)
+  INSERT INTO public.profiles (id, email, first_name, last_name)
   VALUES (
     NEW.id,
     NEW.email,
-    COALESCE(NEW.raw_user_meta_data->>'full_name', 'User'),
-    COALESCE(NEW.raw_user_meta_data->>'role', 'student')
+    COALESCE(NEW.raw_user_meta_data->>'first_name', 'User'),
+    COALESCE(NEW.raw_user_meta_data->>'last_name', '')
   );
   RETURN NEW;
 END;

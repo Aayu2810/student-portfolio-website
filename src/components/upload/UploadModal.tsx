@@ -9,15 +9,15 @@ import { DocumentCategory } from './DocumentCategory';
 interface UploadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onUpload: (files: File[]) => void;
+  onUpload: (files: File[], category: string) => void;
 }
 
 export function UploadModal({ isOpen, onClose, onUpload }: UploadModalProps) {
-  const [selectedCategory, setSelectedCategory] = useState('academic');
+  const [selectedCategory, setSelectedCategory] = useState('other');
 
   const handleUpload = (files: File[]) => {
-    // In a real implementation, this would also include the selected category
-    onUpload(files);
+    // Pass the selected category along with the files
+    onUpload(files, selectedCategory);
   };
 
   if (!isOpen) return null;
@@ -54,7 +54,7 @@ export function UploadModal({ isOpen, onClose, onUpload }: UploadModalProps) {
             <h3 className="text-lg font-semibold text-white mb-3">Select Files</h3>
             <UploadZone 
               onUpload={handleUpload} 
-              maxSize={10} 
+              maxSize={50} 
               maxFiles={5} 
               multiple={true}
             />

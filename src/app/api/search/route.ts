@@ -1,54 +1,56 @@
 // Document Search API
-
-// Mock data for search results
-const mockDocuments = [
-  {
-    id: "1",
-    name: "Degree Certificate.pdf",
-    type: "file",
-    fileType: "application/pdf",
-    size: 2457600,
-    status: "verified",
-    uploadedAt: "2024-11-15T10:30:00Z",
-    thumbnailUrl: "https://via.placeholder.com/400x300/6366f1/ffffff?text=Degree+Certificate",
-    description: "Official degree certificate from RVCE"
-  },
-  {
-    id: "2",
-    name: "Transcript.pdf",
-    type: "file",
-    fileType: "application/pdf",
-    size: 1843200,
-    status: "pending",
-    uploadedAt: "2024-11-20T14:15:00Z",
-    description: "Academic transcript for all semesters"
-  },
-  {
-    id: "3",
-    name: "ID Card.jpg",
-    type: "file",
-    fileType: "image/jpeg",
-    size: 512000,
-    status: "rejected",
-    uploadedAt: "2024-11-22T09:45:00Z",
-    thumbnailUrl: "https://via.placeholder.com/400x300/ec4899/ffffff?text=ID+Card",
-    description: "Student identification card"
-  }
-];
+import { createClient } from '../../../lib/supabase/server'
 
 export async function GET(request: Request) {
   try {
+    const supabase = await createClient();
+    
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('q') || '';
     
-    // In a real implementation, we would perform a full-text search
-    // For now, we'll filter mock documents based on the query
-    const results = mockDocuments.filter(doc => 
-      doc.name.toLowerCase().includes(query.toLowerCase()) ||
-      (doc.description && doc.description.toLowerCase().includes(query.toLowerCase()))
-    );
+    // Check if user is authenticated
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     
-    return Response.json({ results });
+    if (authError || !user) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    // Perform search on documents table
+    let queryBuilder = supabase
+      .from('documents')
+      .select('id, title, category, file_type, file_size, is_public, created_at, description, thumbnail_url')
+      .or(`title.ilike.%${query}% or description.ilike.%${query}% or category.ilike.%${query}%`, { referencedTable: '' })
+      .eq('user_id', user.id) // Only search user's documents
+      .limit(20); // Limit results
+    
+    const { data: searchResults, error: dbError } = await queryBuilder;
+    
+    if (dbError) {
+      console.error('Error searching documents:', dbError);
+      return Response.json({ error: 'Failed to search documents' }, { status: 500 });
+    }
+    
+    // Transform the results to match expected format
+    const results = searchResults.map(doc => ({
+      id: doc.id,
+      name: doc.title,
+      type: doc.category,
+      fileType: doc.file_type,
+      size: doc.file_size,
+      status: doc.is_public ? 'verified' : 'pending',
+      uploadedAt: doc.created_at,
+      thumbnailUrl: doc.thumbnail_url,
+      description: doc.description || ''
+    }));
+    
+    // Add caching headers
+    const headers = new Headers();
+    headers.append('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
+    
+    return new Response(JSON.stringify({ results }), {
+      status: 200,
+      headers: headers
+    });
   } catch (error) {
     console.error('Error searching documents:', error);
     return Response.json({ error: 'Failed to search documents' }, { status: 500 });
