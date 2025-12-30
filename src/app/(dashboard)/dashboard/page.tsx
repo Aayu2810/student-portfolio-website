@@ -4,15 +4,16 @@ import { useEffect, useState, useMemo, useCallback } from 'react'
 import { FileText, CheckCircle, Share2, User, QrCode, Copy, Check } from 'lucide-react'
 import { AttestedModal } from '../../../components/AttestedModal'
 import { useDocuments } from '../../../hooks/useDocuments'
+import { useDashboardStats } from '../../../hooks/useDashboardStats'
 import { useUser } from '../../../hooks/useUser'
 import { createClient } from '../../../lib/supabase/client'
 import Link from 'next/link'
 
 export default function DashboardPage() {
   const { documents, loading } = useDocuments()
+  const { stats: dashboardStats, loading: statsLoading } = useDashboardStats()
   const { user, profile } = useUser()
   const supabase = createClient()
-  const [totalShares, setTotalShares] = useState(0)
   const [showShareModal, setShowShareModal] = useState(false)
   const [shareLink, setShareLink] = useState('')
   const [expiresIn, setExpiresIn] = useState('24')
@@ -21,17 +22,7 @@ export default function DashboardPage() {
   const [showAttestedModal, setShowAttestedModal] = useState(false)
   const [selectedDocument, setSelectedDocument] = useState<any>(null)
 
-  useEffect(() => {
-    const fetchShares = async () => {
-      if (!user) return
-      const { data } = await supabase
-        .from('share_links')
-        .select('id')
-        .eq('user_id', user.id)
-      setTotalShares(data?.length || 0)
-    }
-    fetchShares()
-  }, [user])
+  // Remove the old fetchShares effect since we now use useDashboardStats hook
 
   const generateShareLink = async () => {
     if (!user) return;
@@ -62,25 +53,25 @@ export default function DashboardPage() {
     setTimeout(() => setCopied(false), 2000);
   }, [shareLink]);
 
-  const stats = useMemo(() => [
+  const statsCards = useMemo(() => [
     {
       icon: <FileText className="w-8 h-8" />,
       label: 'Total Documents',
-      value: documents.length.toString(),
+      value: dashboardStats?.totalDocuments?.toString() || '0',
       color: 'from-blue-500 to-cyan-500',
       href: '/documents'
     },
     {
       icon: <CheckCircle className="w-8 h-8" />,
       label: 'Verified',
-      value: documents.filter(d => d.is_public).length.toString(),
+      value: dashboardStats?.verifiedDocuments?.toString() || '0',
       color: 'from-green-500 to-emerald-500',
       href: '/verification'
     },
     {
       icon: <Share2 className="w-8 h-8" />,
       label: 'Shared Links',
-      value: totalShares.toString(),
+      value: dashboardStats?.sharedLinks?.toString() || '0',
       color: 'from-purple-500 to-pink-500',
       onClick: () => {
         generateShareLink();
@@ -95,7 +86,7 @@ export default function DashboardPage() {
       href: '/profile'
     },
 
-  ], [documents, totalShares, generateShareLink, setShowShareModal]);
+  ], [dashboardStats, generateShareLink, setShowShareModal]);
 
   const recentDocs = useMemo(() => documents.slice(0, 5), [documents]);
 
@@ -120,7 +111,7 @@ export default function DashboardPage() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat, index) => (
+          {statsCards.map((stat: any, index: number) => (
             <div
               key={index}
               onClick={() => {
