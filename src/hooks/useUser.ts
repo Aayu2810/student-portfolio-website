@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '../lib/supabase/client'
 import { Profile } from '../types'
 import { User } from '@supabase/supabase-js'
+import { showNotification } from '../components/notifications/NotificationPopup'
 
 export function useUser() {
   const [user, setUser] = useState<User | null>(null)
@@ -65,6 +66,16 @@ export function useUser() {
           if (isMounted) {
             setUser(session?.user ?? null)
             
+            // Show welcome notification on sign in
+            if (event === 'SIGNED_IN' && session?.user) {
+              showNotification({
+                type: 'success',
+                title: 'Welcome Back! 🎉',
+                message: `Successfully signed in as ${session.user.email}`,
+                actionText: 'Get Started'
+              })
+            }
+            
             if (session?.user) {
               const { data: profileData, error: profileError } = await supabase
                 .from('profiles')
@@ -97,5 +108,10 @@ export function useUser() {
     }
   }, [])
 
-  return { user, profile, loading, error }
+  return {
+    user,
+    profile,
+    loading,
+    error
+  }
 }

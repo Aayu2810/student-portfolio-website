@@ -25,6 +25,7 @@ export function useDashboardStats() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const supabase = createClient();
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -36,7 +37,6 @@ export function useDashboardStats() {
       try {
         setLoading(true);
         setError(null);
-        const supabase = createClient();
         
         // Get user's storage info
         const { data: profile } = await supabase
@@ -97,8 +97,6 @@ export function useDashboardStats() {
   const refetch = () => {
     if (user) {
       setLoading(true);
-      const supabase = createClient();
-      
       const fetchStats = async () => {
         try {
           setError(null);
@@ -149,7 +147,6 @@ export function useDashboardStats() {
           
           setStats(newStats);
         } catch (err: any) {
-          console.error('Error refetching dashboard stats:', err);
           setError(err.message);
         } finally {
           setLoading(false);

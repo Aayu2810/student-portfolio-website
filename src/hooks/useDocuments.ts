@@ -1,172 +1,101 @@
 import { useState, useEffect } from 'react'
-import { CACHE_CONFIG, CACHE_KEYS, createOptimizedFetcher, clearUserCache, getMemoryCache, setMemoryCache } from '../lib/cache';
 import { createClient } from '../lib/supabase/client'
 import { Document } from '../types'
-import useSWR from 'swr'
 import { useUser } from './useUser'
-
-// Ultra-fast document fetcher with multi-layer caching
-const documentFetcher = createOptimizedFetcher(
-  'documents',
-  async (key: string, userId: string) => {
-    // Check memory cache first for ultra-fast access
-    const memCache = getMemoryCache(`documents-${userId}`, CACHE_CONFIG.documents.staleTime);
-    if (memCache) {
-      console.log('Memory cache hit for documents');
-      return memCache;
-    }
-
-    const supabase = createClient()
-    
-    if (!userId) {
-      throw new Error('Not authenticated')
-    }
-
-    // Optimized query with specific fields for performance
-    const { data, error } = await supabase
-      .from('documents')
-      .select('id, user_id, title, description, category, tags, file_url, file_name, file_type, file_size, storage_path, thumbnail_url, is_favorite, is_public, views, downloads, created_at, updated_at')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-
-    if (error) throw error
-    const result = data || [];
-    
-    // Store in memory cache for instant access
-    setMemoryCache(`documents-${userId}`, result);
-    
-    return result;
-  },
-  CACHE_CONFIG.documents
-)
 
 export function useDocuments() {
   const { user } = useUser()
-  
-  // Clear stale cache on mount for fresh data
+  const [documents, setDocuments] = useState<Document[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
   useEffect(() => {
-    if (user?.id) {
-      // Only clear very old cache, not recent data
-      clearUserCache(user.id);
-    }
-  }, [user?.id])
-  
-  const { data, error, mutate } = useSWR<Document[] | null>(
-    user?.id ? CACHE_KEYS.documents(user.id) : null,
-    user?.id ? (key: string) => documentFetcher(key, user.id) : null,
-    {
-      ...CACHE_CONFIG.documents,
-      onSuccess: (data) => {
-        // Update memory cache on successful fetch
-        if (user?.id && data) {
-          setMemoryCache(`documents-${user.id}`, data);
-        }
-      },
-      onError: (error) => {
-        console.error('Documents fetch error:', error);
+    const fetchDocuments = async () => {
+      if (!user) {
+        setDocuments([])
+        setLoading(false)
+        return
+      }
+
+      try {
+        setLoading(true)
+        setError(null)
+        const supabase = createClient()
+        
+        const { data, error } = await supabase
+          .from('documents')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+
+        if (error) throw error
+        setDocuments(data || [])
+      } catch (err: any) {
+        console.error('Error fetching documents:', err)
+        setError(err.message)
+      } finally {
+        setLoading(false)
       }
     }
-  )
 
-  // Optimized delete function with smart cache invalidation
+    fetchDocuments()
+  }, [user])
+
   const deleteDocument = async (documentId: string) => {
     const supabase = createClient()
-    const { user } = useUser()
     
-    if (!user) {
-      throw new Error('User not authenticated')
-    }
+    const { error } = await supabase
+      .from('documents')
+      .delete()
+      .eq('id', documentId)
+      .eq('user_id', user?.id)
+
+    if (error) throw error
     
-    try {
-      // Delete from database
-      const { error } = await supabase
-        .from('documents')
-        .delete()
-        .eq('id', documentId)
-        
-        if (error) throw error
-        
-        // Optimistic update - remove from cache immediately
-        const currentData = data || [];
-        const optimisticData = currentData.filter(doc => doc.id !== documentId);
-        
-        // Update all cache layers
-        mutate(optimisticData, {
-          revalidate: false,
-          populateCache: true,
-          rollbackOnError: true,
-          optimisticData,
-        });
-        
-        // Clear memory cache
-        if (user?.id) {
-          setMemoryCache(`documents-${user.id}`, optimisticData);
-        }
-        
-        // Revalidate after a short delay to ensure consistency
-        setTimeout(() => mutate(), 500);
-        
-    } catch (err: any) {
-      console.error('Delete error:', err);
-      // Revert optimistic update on error
-      mutate();
-      throw err
-    }
+    setDocuments(prev => prev.filter(doc => doc.id !== documentId))
   }
 
-  // Optimized update function with smart cache invalidation
   const updateDocument = async (documentId: string, updates: Partial<Document>) => {
     const supabase = createClient()
-    const { user } = useUser()
     
-    if (!user) {
-      throw new Error('User not authenticated')
-    }
+    const { data, error } = await supabase
+      .from('documents')
+      .update(updates)
+      .eq('id', documentId)
+      .eq('user_id', user?.id)
+      .select()
+      .single()
+
+    if (error) throw error
     
-    try {
-      const { error } = await supabase
-        .from('documents')
-        .update(updates)
-        .eq('id', documentId)
-        
-        if (error) throw error
-        
-        // Optimistic update - update cache immediately
-        const currentData = data || [];
-        const optimisticData = currentData.map(doc => 
-          doc.id === documentId ? { ...doc, ...updates, updated_at: new Date().toISOString() } : doc
-        );
-        
-        // Update all cache layers
-        mutate(optimisticData, {
-          revalidate: false,
-          populateCache: true,
-          rollbackOnError: true,
-          optimisticData,
-        });
-        
-        // Clear memory cache
-        if (user?.id) {
-          setMemoryCache(`documents-${user.id}`, optimisticData);
-        }
-        
-        // Revalidate after a short delay to ensure consistency
-        setTimeout(() => mutate(), 500);
-        
-    } catch (err: any) {
-      console.error('Update error:', err);
-      // Revert optimistic update on error
-      mutate();
-      throw err
+    setDocuments(prev => prev.map(doc => 
+      doc.id === documentId ? { ...doc, ...data } : doc
+    ))
+    
+    return data
+  }
+
+  const mutate = () => {
+    if (user) {
+      const fetchDocuments = async () => {
+        const supabase = createClient()
+        const { data } = await supabase
+          .from('documents')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+        setDocuments(data || [])
+      }
+      fetchDocuments()
     }
   }
 
   return {
-    documents: data || [],
-    loading: !error && !data && user !== undefined,
-    error: error ? error.message : null,
-    refetch: () => mutate(),
+    documents,
+    loading,
+    error,
     deleteDocument,
-    updateDocument
+    updateDocument,
+    mutate
   }
 }
