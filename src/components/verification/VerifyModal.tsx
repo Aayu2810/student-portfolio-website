@@ -22,6 +22,7 @@ interface VerifyModalProps {
   documentName: string;
   documentType: string;
   canVerify?: boolean;
+  currentStatus?: "pending" | "approved" | "rejected";
 }
 
 export function VerifyModal({
@@ -31,6 +32,7 @@ export function VerifyModal({
   documentName,
   documentType,
   canVerify = true,
+  currentStatus = 'pending',
 }: VerifyModalProps) {
   const [action, setAction] = useState<"approve" | "reject" | null>(null);
   const [addRVCELogo, setAddRVCELogo] = useState(true); // Default to true for verification
@@ -43,11 +45,16 @@ export function VerifyModal({
       return;
     }
 
+    if (action === "reject" && !rejectionReason.trim()) {
+      setError("Please provide a reason for rejection");
+      return;
+    }
+
     if (action === "approve" && addRVCELogo) {
       // When approving, we'll add the RVCE logo in the backend
       onVerify(action);
     } else if (action === "reject") {
-      onVerify(action, rejectionReason);
+      onVerify(action, rejectionReason.trim());
     } else {
       onVerify(action);
     }
@@ -77,6 +84,21 @@ export function VerifyModal({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          {/* Current Status */}
+          <div className="p-3 bg-white/5 border border-white/10 rounded-lg">
+            <p className="text-sm text-gray-400">Current Status</p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                currentStatus === 'approved' ? 'bg-green-600 text-white' :
+                currentStatus === 'rejected' ? 'bg-red-600 text-white' :
+                'bg-yellow-600 text-white'
+              }`}>
+                {currentStatus === 'approved' ? 'Approved' :
+                 currentStatus === 'rejected' ? 'Rejected' : 'Pending'}
+              </span>
+            </div>
+          </div>
+
           {/* Document Info */}
           <div className="p-3 bg-white/5 border border-white/10 rounded-lg">
             <p className="text-sm text-gray-400">Document Type</p>
