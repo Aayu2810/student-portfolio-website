@@ -267,14 +267,6 @@ export default function DocumentPage({ params }: { params: { docId: string } }) 
               </div>
             )}
           </div>
-          {document.is_public && (
-            <div className="mt-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-              <p className="text-green-400 text-sm flex items-center gap-2">
-                <CheckCircle className="w-4 h-4" />
-                This document has been authenticated with the official RVCE verification logo
-              </p>
-            </div>
-          )}
         </div>
 
         {/* Document Details */}
