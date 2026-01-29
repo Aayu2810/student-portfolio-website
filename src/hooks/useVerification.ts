@@ -1,9 +1,7 @@
-// Verification Logic Hook with Optimized Caching
+// Simple Verification Hook - No Complex Real-time, Fast Loading
 import { useState, useEffect } from 'react';
 import { createClient } from '../lib/supabase/client';
 import { useUser } from './useUser';
-import { CACHE_CONFIG, CACHE_KEYS, createOptimizedFetcher, getMemoryCache, setMemoryCache } from '../lib/cache';
-import useSWR from 'swr';
 
 export interface VerificationDocument {
   id: string;
@@ -20,215 +18,257 @@ export interface VerificationDocument {
   storage_path?: string;
 }
 
-// Optimized verification fetcher with caching
-const verificationFetcher = createOptimizedFetcher(
-  'verification',
-  async (key: string, userId: string, userRole: string) => {
-    // Check memory cache first
-    const memCache = getMemoryCache(`verification-${userId}-${userRole}`, CACHE_CONFIG.verification.staleTime);
-    if (memCache) {
-      console.log('Memory cache hit for verification');
-      return memCache;
-    }
-
-    const supabase = createClient();
-    
-    let query;
-    if (userRole === 'faculty' || userRole === 'admin') {
-      // Faculty/Admin: fetch all documents that need verification
-      query = supabase
-        .from('documents')
-        .select(`
-          id, 
-          title, 
-          category, 
-          created_at, 
-          is_public, 
-          file_url, 
-          storage_path, 
-          user_id,
-          profiles(first_name, last_name, email)
-        `)
-        .order('created_at', { ascending: false });
-    } else {
-      // Regular user: fetch only their own documents
-      query = supabase
-        .from('documents')
-        .select('id, title, category, created_at, is_public, file_url, storage_path, user_id')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-    }
-
-    const { data: docsData, error: docsError } = await query;
-
-    if (docsError) {
-      throw new Error(docsError.message);
-    }
-
-    if (!docsData || docsData.length === 0) {
-      return [];
-    }
-    
-    // Fetch verification status for all documents
-    const docIds = docsData.map(doc => doc.id);
-    const { data: verificationData, error: verificationError } = await supabase
-      .from('verifications')
-      .select('document_id, status, rejection_reason')
-      .in('document_id', docIds);
-    
-    if (verificationError) {
-      console.error('Error fetching verifications:', verificationError);
-    }
-    
-    const verificationMap = verificationData ? 
-      verificationData.reduce((acc: Record<string, any>, v) => {
-        acc[v.document_id] = v;
-        return acc;
-      }, {}) : {};
-    
-    // Transform the data with proper status handling
-    const transformedData = docsData.map((doc: any) => {
-      const verification = verificationMap[doc.id];
-      
-      // Determine status from verifications table or fallback to is_public
-      let status: 'pending' | 'in-review' | 'verified' | 'rejected' = 'pending';
-      let rejectionReason = undefined;
-      
-      if (verification && verification.status) {
-        status = verification.status as 'pending' | 'in-review' | 'verified' | 'rejected';
-        if (verification.rejection_reason) {
-          rejectionReason = verification.rejection_reason;
-        }
-      } else {
-        // Fallback to is_public field
-        status = doc.is_public ? 'verified' as const : 'pending' as const;
-      }
-      
-      return {
-        id: doc.id,
-        studentName: userRole === 'faculty' || userRole === 'admin' 
-          ? `${doc.profiles?.[0]?.first_name || 'User'} ${doc.profiles?.[0]?.last_name || ''}`.trim() || 'User'
-          : 'Current User',
-        studentEmail: userRole === 'faculty' || userRole === 'admin' 
-          ? doc.profiles?.[0]?.email || 'N/A'
-          : 'N/A',
-        studentDepartment: 'N/A',
-        documentName: doc.title,
-        documentType: doc.category,
-        uploadedAt: doc.created_at,
-        status: status,
-        rejectionReason: rejectionReason,
-        userId: doc.user_id,
-        file_url: doc.file_url,
-        storage_path: doc.storage_path
-      };
-    });
-    
-    // Store in memory cache
-    setMemoryCache(`verification-${userId}-${userRole}`, transformedData);
-    
-    return transformedData;
-  },
-  CACHE_CONFIG.verification as any
-);
-
 export function useVerification() {
   const { user, profile } = useUser();
-  
-  const { data, error, mutate } = useSWR<VerificationDocument[]>(
-    user?.id && profile?.role ? CACHE_KEYS.verification() : null,
-    user?.id && profile?.role ? (key: string) => verificationFetcher(key, user.id, profile.role) : null,
-    {
-      ...CACHE_CONFIG.verification,
-      onSuccess: (data) => {
-        // Update memory cache on successful fetch
-        if (user?.id && profile?.role && data) {
-          setMemoryCache(`verification-${user.id}-${profile.role}`, data);
-        }
-      },
-      onError: (error) => {
-        console.error('Verification fetch error:', error);
-      }
-    }
-  );
+  const [documents, setDocuments] = useState<VerificationDocument[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const supabase = createClient();
 
-  // Set up real-time subscription for verification updates
+  // Fetch initial data
   useEffect(() => {
-    if (!user || !profile?.role) return;
+    const fetchVerificationDocuments = async () => {
+      if (!user || !profile) {
+        setDocuments([]);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        let query;
+        if (profile?.role === 'faculty' || profile?.role === 'admin') {
+          // Faculty/Admin: fetch all documents that need verification
+          query = supabase
+            .from('documents')
+            .select(`
+              id, 
+              title, 
+              category, 
+              created_at, 
+              is_public, 
+              file_url, 
+              storage_path, 
+              user_id,
+              profiles!documents_user_id_fkey (
+                first_name, 
+                last_name, 
+                email
+              )
+            `)
+            .order('created_at', { ascending: false });
+        } else {
+          // Student: fetch only their documents
+          query = supabase
+            .from('documents')
+            .select(`
+              id, 
+              title, 
+              category, 
+              created_at, 
+              is_public, 
+              file_url, 
+              storage_path, 
+              user_id,
+              profiles!documents_user_id_fkey (
+                first_name, 
+                last_name, 
+                email
+              )
+            `)
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+        }
+
+        const { data, error } = await query;
+
+        if (error) throw error;
+
+        // Get rejection records to determine status
+        let rejectedDocIds = new Set<string>();
+        let rejectionData: any[] = [];
+        try {
+          const { data: rejections } = await supabase
+            .from('document_rejections')
+            .select('document_id, rejection_reason')
+            .eq('document_id', data?.map(doc => doc.id) || []);
+          
+          rejectedDocIds = new Set(rejections?.map((r: any) => r.document_id) || []);
+          rejectionData = rejections || [];
+        } catch (rejectionError) {
+          console.log('Rejection table not found, using simple status logic');
+        }
+
+        // Transform data to match VerificationDocument interface
+        const transformedData: VerificationDocument[] = data?.map(doc => {
+          const profile = Array.isArray(doc.profiles) ? doc.profiles[0] : doc.profiles;
+          const isRejected = rejectedDocIds.has(doc.id);
+          const rejection = isRejected 
+            ? rejectionData.find((r: any) => r.document_id === doc.id)?.rejection_reason 
+            : undefined;
+
+          return {
+            id: doc.id,
+            studentName: profile?.first_name && profile?.last_name 
+              ? `${profile.first_name} ${profile.last_name}`.trim()
+              : profile?.first_name || 'Unknown User',
+            studentEmail: profile?.email || '',
+            studentDepartment: 'Computer Science',
+            documentName: doc.title,
+            documentType: doc.category,
+            uploadedAt: doc.created_at,
+            status: doc.is_public ? 'verified' : (isRejected ? 'rejected' : 'pending'),
+            rejectionReason: rejection,
+            userId: doc.user_id,
+            file_url: doc.file_url,
+            storage_path: doc.storage_path
+          };
+        }) || [];
+
+        setDocuments(transformedData);
+      } catch (err: any) {
+        console.error('Error fetching verification documents:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchVerificationDocuments();
+  }, [user, profile]);
+
+  const refetch = () => {
+    // Simple refetch function
+    if (user && profile) {
+      setLoading(true);
+      const fetchVerificationDocuments = async () => {
+        try {
+          setError(null);
+
+          let query;
+          if (profile?.role === 'faculty' || profile?.role === 'admin') {
+            query = supabase
+              .from('documents')
+              .select(`
+                id, 
+                title, 
+                category, 
+                created_at, 
+                is_public, 
+                file_url, 
+                storage_path, 
+                user_id,
+                profiles!documents_user_id_fkey (
+                  first_name, 
+                  last_name, 
+                  email
+                )
+              `)
+              .order('created_at', { ascending: false });
+          } else {
+            query = supabase
+              .from('documents')
+              .select(`
+                id, 
+                title, 
+                category, 
+                created_at, 
+                is_public, 
+                file_url, 
+                storage_path, 
+                user_id,
+                profiles!documents_user_id_fkey (
+                  first_name, 
+                  last_name, 
+                  email
+                )
+              `)
+              .eq('user_id', user.id)
+              .order('created_at', { ascending: false });
+          }
+
+          const { data } = await query;
+
+          const transformedData: VerificationDocument[] = data?.map(doc => {
+            const profile = Array.isArray(doc.profiles) ? doc.profiles[0] : doc.profiles;
+            return {
+              id: doc.id,
+              studentName: profile?.first_name && profile?.last_name 
+                ? `${profile.first_name} ${profile.last_name}`.trim()
+                : profile?.first_name || 'Unknown User',
+              studentEmail: profile?.email || '',
+              studentDepartment: 'Computer Science',
+              documentName: doc.title,
+              documentType: doc.category,
+              uploadedAt: doc.created_at,
+              status: doc.is_public ? 'verified' : 'pending',
+              userId: doc.user_id,
+              file_url: doc.file_url,
+              storage_path: doc.storage_path
+            };
+          }) || [];
+
+          setDocuments(transformedData);
+        } catch (err: any) {
+          setError(err.message);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchVerificationDocuments();
+    }
+  };
+
+  // Set up real-time subscription for document updates
+  useEffect(() => {
+    if (!user || !profile) return;
     
     const supabase = createClient();
     
-    // Listen for document updates
-    const documentChannel = supabase
-      .channel('document_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
+    // Subscribe to document changes
+    const subscription = supabase
+      .channel('document-changes-student')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
           table: 'documents',
-          filter: profile.role === 'faculty' || profile.role === 'admin' ? 'id=neq.null' : `user_id=eq.${user.id}`
-        },
+          filter: profile.role === 'faculty' || profile.role === 'admin' 
+            ? undefined 
+            : `user_id=eq.${user.id}`
+        }, 
         (payload) => {
-          console.log('Document updated:', payload);
-          // Invalidate memory cache and refetch
-          if (user?.id && profile?.role) {
-            setMemoryCache(`verification-${user.id}-${profile.role}`, null);
-          }
-          mutate();
+          console.log('Student dashboard - Document change detected:', payload);
+          // Refresh the documents when changes occur
+          refetch();
         }
       )
-      .subscribe();
-      
-    // Listen for verification updates
-    const verificationChannel = supabase
-      .channel('verification_status_changes')
-      .on(
-        'postgres_changes',
+      .on('postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
-          table: 'verifications',
-          filter: profile.role === 'faculty' || profile.role === 'admin' ? 'document_id=neq.null' : `document_id.in.(select id from documents where user_id=eq.${user.id})`
+          table: 'document_rejections'
         },
         (payload) => {
-          console.log('Verification status updated:', payload);
-          // Invalidate memory cache and refetch
-          if (user?.id && profile?.role) {
-            setMemoryCache(`verification-${user.id}-${profile.role}`, null);
-          }
-          mutate();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'verifications',
-          filter: profile.role === 'faculty' || profile.role === 'admin' ? 'document_id=neq.null' : `document_id.in.(select id from documents where user_id=eq.${user.id})`
-        },
-        (payload) => {
-          console.log('Verification status updated:', payload);
-          // Invalidate memory cache and refetch
-          if (user?.id && profile?.role) {
-            setMemoryCache(`verification-${user.id}-${profile.role}`, null);
-          }
-          mutate();
+          console.log('Student dashboard - Rejection change detected:', payload);
+          // Refresh the documents when rejections change
+          refetch();
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(documentChannel);
-      supabase.removeChannel(verificationChannel);
+      subscription.unsubscribe();
     };
-  }, [user, profile?.role, mutate]);
+  }, [user, profile, refetch]);
 
   return {
-    documents: data || [],
-    loading: !error && !data && user !== undefined,
-    error: error ? error.message : null,
-    refetch: () => mutate()
+    documents,
+    loading,
+    error,
+    refetch
   };
 }
