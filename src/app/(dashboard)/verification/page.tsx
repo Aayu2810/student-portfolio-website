@@ -71,17 +71,10 @@ export default function VerificationPage() {
     <div className="min-h-screen bg-gray-900 text-white p-8">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mb-8">
             <FileText className="w-6 h-6" />
             <h1 className="text-3xl font-bold">Verification Status</h1>
           </div>
-          {userRole === 'faculty' && (
-            <Link href="/faculty/dashboard">
-              <Button variant="outline">
-                Faculty Dashboard
-              </Button>
-            </Link>
-          )}
         </div>
 
         {documents.length === 0 ? (
@@ -121,11 +114,11 @@ export default function VerificationPage() {
                       className={
                         doc.status === 'verified' ? 'bg-green-600' :
                         doc.status === 'rejected' ? 'bg-red-600' :
-                        doc.status === 'in-review' ? 'bg-blue-600' :
-                        'bg-yellow-600'
+                        'bg-red-500'
                       }
                     >
                       {doc.status === 'in-review' ? 'In Review' : 
+                       doc.status === 'pending' ? 'Rejected - Contact Faculty' :
                        doc.status.charAt(0).toUpperCase() + doc.status.slice(1)}
                     </Badge>
                   </div>

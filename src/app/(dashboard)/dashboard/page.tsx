@@ -191,7 +191,7 @@ export default function DashboardPage() {
                             className="flex items-center gap-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-lg transition-colors"
                           >
                             <Check className="w-3 h-3" />
-                            View Attested Document
+                            View Document
                           </button>
                         )}
                       </div>
