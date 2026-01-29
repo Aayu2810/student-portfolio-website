@@ -1,8 +1,37 @@
-// Single Document Verification Status API
 import { createClient } from '../../../../lib/supabase/server'
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
 import * as fs from 'fs/promises'
 import * as path from 'path'
+import { createAuditLog, createNotification } from '../../../../lib/audit'
+
+// Notification helper function
+async function triggerNotification(
+  userId: string,
+  type: 'success' | 'error',
+  title: string,
+  message: string,
+  documentTitle?: string,
+  documentUrl?: string
+) {
+  try {
+    // Create notification in database
+    await createNotification({
+      user_id: userId,
+      title,
+      message,
+      type,
+      data: {
+        document_title: documentTitle,
+        document_url: documentUrl
+      }
+    });
+
+    // Also trigger a global notification popup
+    // This will be handled by the client-side real-time subscription
+  } catch (error) {
+    console.error('Error triggering notification:', error);
+  }
+}
 
 interface VerificationHistory {
   id: string;
@@ -300,7 +329,7 @@ export async function POST(request: Request, { params }: { params: { docId: stri
       // First, fetch the document to get its URL and storage path
       const { data: document, error: docError } = await supabase
         .from('documents')
-        .select('file_url, storage_path, file_name, file_type')
+        .select('file_url, storage_path, file_name, file_type, title, user_id')
         .eq('id', params.docId)
         .single();
 
@@ -382,6 +411,33 @@ export async function POST(request: Request, { params }: { params: { docId: stri
         // Don't fail the request if log creation fails
       }
 
+      // Create notification for document owner
+      await triggerNotification(
+        document.user_id,
+        'success',
+        'Document Approved! 🎉',
+        `Your document "${document.title}" has been approved and verified by faculty.`,
+        document.title,
+        document.file_url
+      );
+
+      // Create audit log
+      try {
+        await createAuditLog({
+          user_id: user.id,
+          action: 'approve',
+          resource_type: 'document',
+          resource_id: params.docId,
+          details: {
+            document_title: document.title,
+            document_owner_id: document.user_id,
+            verified_by: user.email
+          }
+        });
+      } catch (auditError) {
+        console.error('Error creating audit log:', auditError);
+      }
+
       return Response.json({ 
         success: true, 
         message: 'Document verified successfully',
@@ -442,6 +498,16 @@ export async function POST(request: Request, { params }: { params: { docId: stri
         console.error('Error updating verification record:', verificationResult.error);
         return Response.json({ error: 'Failed to update verification status' }, { status: 500 });
       }
+
+      // Create notification for document owner
+      await triggerNotification(
+        document.user_id,
+        'error',
+        'Document Rejected ❌',
+        `Your document "${document.title}" has been rejected. Reason: ${reason}`,
+        document.title,
+        document.file_url
+      );
 
       // Create a rejection log
       const logResult = await supabase

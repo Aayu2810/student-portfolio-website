@@ -20,17 +20,20 @@ import { UploadModal } from '../../../components/upload/UploadModal'
 import DocumentShareModal from '../../../components/documents/DocumentShareModal'
 
 export default function DocumentsPage() {
-  const { documents, loading, error, refetch, deleteDocument, updateDocument } = useDocuments()
   const { user } = useUser()
+  const { documents, loading, error, mutate, updateDocument, deleteDocument } = useDocuments()
   const router = useRouter()
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [searchQuery, setSearchQuery] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('all')
+  const [sortBy, setSortBy] = useState('date')
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [uploadModalOpen, setUploadModalOpen] = useState(false)
+  const [shareDocument, setShareDocument] = useState<Document | null>(null)
   const [shareModalOpen, setShareModalOpen] = useState(false)
-  const [shareDocument, setShareDocument] = useState<{ id: string, name: string } | null>(null)
+  const supabase = createClient()
+  const [shareDocumentId, setShareDocumentId] = useState<{ id: string, name: string } | null>(null)
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
-  const supabase = createClient()
 
   const filteredDocuments = useMemo(() => {
     if (!documents) return [];
@@ -431,7 +434,13 @@ export default function DocumentsPage() {
         isOpen={uploadModalOpen}
         onClose={() => setUploadModalOpen(false)}
         onUpload={async (files: File[], category: string) => {
-          // Handle the actual upload to Supabase
+          const { data: { session } } = await supabase.auth.getSession()
+          
+          if (!session?.access_token) {
+            alert('Please log in again to upload documents');
+            return;
+          }
+          
           for (const file of files) {
             const formData = new FormData();
             formData.append('file', file);
@@ -441,24 +450,27 @@ export default function DocumentsPage() {
             formData.append('tags', '');
             
             try {
-              const response = await fetch('/api/upload', {
+              const response = await fetch('/api/upload-simple', {
                 method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${session.access_token}`,
+                },
                 body: formData,
               });
               
               if (!response.ok) {
                 const errorData = await response.json();
-                console.error('Upload failed:', errorData.error);
                 alert(`Upload failed: ${errorData.error}`);
+              } else {
+                // Successfully uploaded, refresh the documents list
+                mutate();
               }
             } catch (error) {
-              console.error('Upload error:', error);
               alert('Upload failed due to network error');
             }
           }
           
-          // Refetch documents after upload
-          refetch();
+          mutate();
           setUploadModalOpen(false);
         }}
       />
