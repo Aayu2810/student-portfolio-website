@@ -56,3 +56,4 @@ WHERE id IN (
   SELECT id FROM public.profiles WHERE role IN ('faculty', 'admin')
 );
 
+

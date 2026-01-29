@@ -41,3 +41,4 @@ END $$;
 -- After the user is created in auth.users, the profile will be automatically created
 -- by the trigger, but we ensure the role is set to 'faculty'
 
+

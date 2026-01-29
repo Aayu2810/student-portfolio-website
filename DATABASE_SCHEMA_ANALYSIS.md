@@ -156,3 +156,4 @@ The schema is **mostly correct** but needs:
 4. Missing RLS UPDATE policies
 5. Missing indexes for performance
 
+
