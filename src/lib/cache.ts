@@ -123,21 +123,24 @@ export const createOptimizedFetcher = <T extends any>(
   return async (fetchKey: string, ...args: any[]) => {
     try {
       const config = cacheConfig || CACHE_CONFIG.documents;
-      const cacheKey = `${key}-${fetchKey}`;
+      
+      // Generate user-specific cache key to prevent data leakage between users
+      const userId = args[0] || 'anonymous';
+      const cacheKey = `${key}-${userId}-${fetchKey}`;
       
       // Check localStorage cache first
       if (typeof window !== 'undefined') {
         const cached = localStorage.getItem(cacheKey);
         if (cached) {
-          const { data, timestamp } = JSON.parse(cached);
+          const { data, timestamp, userId: cachedUserId } = JSON.parse(cached);
           const age = Date.now() - timestamp;
           
-          // Return cached data if still fresh
-          if (age < config.staleTime) {
+          // Security check: Only return cached data if it belongs to current user
+          if (cachedUserId === userId && age < config.staleTime) {
             console.log(`Cache hit for ${cacheKey}:`, { age: Math.round(age / 1000) + 's' });
             return data as T;
           } else {
-            // Remove stale cache
+            // Remove stale or invalid cache
             localStorage.removeItem(cacheKey);
           }
         }
@@ -147,11 +150,12 @@ export const createOptimizedFetcher = <T extends any>(
       console.log(`Cache miss for ${cacheKey}: fetching fresh data`);
       const result = await fetcher(fetchKey, ...args);
       
-      // Cache the result
+      // Cache the result with user ID for security
       if (typeof window !== 'undefined') {
         localStorage.setItem(cacheKey, JSON.stringify({
           data: result,
           timestamp: Date.now(),
+          userId: userId, // Store user ID to prevent data leakage
         }));
       }
       
@@ -191,4 +195,35 @@ export const invalidateMemoryCache = (pattern?: string) => {
   } else {
     memoryCache.clear();
   }
+};
+
+// Security: Clear all cache when user switches to prevent data leakage
+export const clearAllUserCache = () => {
+  if (typeof window === 'undefined') return;
+  
+  console.log('🔒 SECURITY: Clearing all user cache to prevent data leakage');
+  
+  // Clear ALL localStorage keys that could contain user data
+  const keys = Object.keys(localStorage);
+  keys.forEach(key => {
+    // Clear any cache key that might contain user data
+    if (key.includes('documents') || 
+        key.includes('stats') || 
+        key.includes('verification') || 
+        key.includes('locker') || 
+        key.includes('faculty') ||
+        key.includes('dashboard') ||
+        key.includes('user') ||
+        key.includes('auth')) {
+      localStorage.removeItem(key);
+      console.log(`🗑️ Removed cache key: ${key}`);
+    }
+  });
+  
+  // Clear memory cache completely
+  memoryCache.clear();
+  console.log('🧹 Memory cache cleared');
+  
+  // Force reload to ensure no cached data remains
+  console.log('🔄 Cache cleared successfully');
 };
