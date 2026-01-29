@@ -17,6 +17,7 @@ import { useStorage } from '@/hooks/useStorage'
 import { useUser } from '@/hooks/useUser'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { NotificationBell } from '../notifications/NotificationBell'
 
 export function Sidebar() {
   const pathname = usePathname()
@@ -94,6 +95,7 @@ export function Sidebar() {
               {profile?.email || ''}
             </p>
           </div>
+          <NotificationBell />
         </div>
       </div>
 
