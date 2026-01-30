@@ -22,9 +22,8 @@ export default function DashboardPage() {
   const [showAttestedModal, setShowAttestedModal] = useState(false)
   const [selectedDocument, setSelectedDocument] = useState<any>(null)
 
-  // Remove the old fetchShares effect since we now use useDashboardStats hook
-
-  const generateShareLink = async () => {
+  // Memoize expensive callback
+  const generateShareLink = useCallback(async () => {
     if (!user) return;
     
     try {
@@ -40,12 +39,12 @@ export default function DashboardPage() {
     } catch (error) {
       console.error('Error generating share link:', error);
     }
-  };
+  }, [user]);
 
-  const viewAttestedDocument = async (doc: any) => {
+  const viewAttestedDocument = useCallback(async (doc: any) => {
     setSelectedDocument(doc);
     setShowAttestedModal(true);
-  };
+  }, []);
 
   const copyToClipboard = useCallback(() => {
     navigator.clipboard.writeText(shareLink);
@@ -57,21 +56,21 @@ export default function DashboardPage() {
     {
       icon: <FileText className="w-8 h-8" />,
       label: 'Total Documents',
-      value: dashboardStats?.totalDocuments?.toString() || '0',
+      value: statsLoading ? '—' : (dashboardStats?.totalDocuments?.toString() || '0'),
       color: 'from-blue-500 to-cyan-500',
       href: '/documents'
     },
     {
       icon: <CheckCircle className="w-8 h-8" />,
       label: 'Verified',
-      value: dashboardStats?.verifiedDocuments?.toString() || '0',
+      value: statsLoading ? '—' : (dashboardStats?.verifiedDocuments?.toString() || '0'),
       color: 'from-green-500 to-emerald-500',
       href: '/verification'
     },
     {
       icon: <Share2 className="w-8 h-8" />,
       label: 'Shared Links',
-      value: dashboardStats?.sharedLinks?.toString() || '0',
+      value: statsLoading ? '—' : (dashboardStats?.sharedLinks?.toString() || '0'),
       color: 'from-purple-500 to-pink-500',
       onClick: () => {
         generateShareLink();
@@ -86,7 +85,7 @@ export default function DashboardPage() {
       href: '/profile'
     },
 
-  ], [dashboardStats, generateShareLink, setShowShareModal]);
+  ], [dashboardStats, statsLoading, generateShareLink, setShowShareModal]);
 
   const recentDocs = useMemo(() => documents.slice(0, 5), [documents]);
 

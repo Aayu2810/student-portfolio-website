@@ -38,48 +38,57 @@ export function useDashboardStats() {
         setLoading(true);
         setError(null);
         
-        // Get user's storage info
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('storage_used, storage_limit')
-          .eq('id', user.id)
-          .single();
-        
-        // Get documents count
-        const { count: totalDocs } = await supabase
-          .from('documents')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id);
-        
-        // Get verified documents count
-        const { count: verifiedDocs } = await supabase
-          .from('documents')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id)
-          .eq('is_public', true);
-        
-        // Get shared links count
-        const { count: sharedLinks } = await supabase
-          .from('shared_links')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id);
-        
-        // Get recent uploads
-        const { data: recentUploads } = await supabase
-          .from('documents')
-          .select('id, title, category, created_at, is_public')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(5);
+        // Run all queries in parallel for faster loading!
+        const [
+          profileResult,
+          totalDocsResult,
+          verifiedDocsResult,
+          sharedLinksResult,
+          recentUploadsResult
+        ] = await Promise.all([
+          // Get user's storage info
+          supabase
+            .from('profiles')
+            .select('storage_used, storage_limit')
+            .eq('id', user.id)
+            .single(),
+          
+          // Get documents count
+          supabase
+            .from('documents')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id),
+          
+          // Get verified documents count
+          supabase
+            .from('documents')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .eq('is_public', true),
+          
+          // Get shared links count
+          supabase
+            .from('shared_links')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id),
+          
+          // Get recent uploads
+          supabase
+            .from('documents')
+            .select('id, title, category, created_at, is_public')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(5)
+        ]);
         
         const newStats: DashboardStats = {
-          totalDocuments: totalDocs || 0,
-          verifiedDocuments: verifiedDocs || 0,
-          sharedLinks: sharedLinks || 0,
+          totalDocuments: totalDocsResult.count || 0,
+          verifiedDocuments: verifiedDocsResult.count || 0,
+          sharedLinks: sharedLinksResult.count || 0,
           profileViews: 0,
-          storageUsed: profile?.storage_used || 0,
-          storageLimit: profile?.storage_limit || 0,
-          recentUploads: recentUploads || []
+          storageUsed: profileResult.data?.storage_used || 0,
+          storageLimit: profileResult.data?.storage_limit || 0,
+          recentUploads: recentUploadsResult.data || []
         };
         
         setStats(newStats);
@@ -101,48 +110,52 @@ export function useDashboardStats() {
         try {
           setError(null);
           
-          // Get user's storage info
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('storage_used, storage_limit')
-            .eq('id', user.id)
-            .single();
-          
-          // Get documents count
-          const { count: totalDocs } = await supabase
-            .from('documents')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', user.id);
-          
-          // Get verified documents count
-          const { count: verifiedDocs } = await supabase
-            .from('documents')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', user.id)
-            .eq('is_public', true);
-          
-          // Get shared links count
-          const { count: sharedLinks } = await supabase
-            .from('shared_links')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', user.id);
-          
-          // Get recent uploads
-          const { data: recentUploads } = await supabase
-            .from('documents')
-            .select('id, title, category, created_at, is_public')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
-            .limit(5);
+          // Run all queries in parallel
+          const [
+            profileResult,
+            totalDocsResult,
+            verifiedDocsResult,
+            sharedLinksResult,
+            recentUploadsResult
+          ] = await Promise.all([
+            supabase
+              .from('profiles')
+              .select('storage_used, storage_limit')
+              .eq('id', user.id)
+              .single(),
+            
+            supabase
+              .from('documents')
+              .select('id', { count: 'exact', head: true })
+              .eq('user_id', user.id),
+            
+            supabase
+              .from('documents')
+              .select('id', { count: 'exact', head: true })
+              .eq('user_id', user.id)
+              .eq('is_public', true),
+            
+            supabase
+              .from('shared_links')
+              .select('id', { count: 'exact', head: true })
+              .eq('user_id', user.id),
+            
+            supabase
+              .from('documents')
+              .select('id, title, category, created_at, is_public')
+              .eq('user_id', user.id)
+              .order('created_at', { ascending: false })
+              .limit(5)
+          ]);
           
           const newStats: DashboardStats = {
-            totalDocuments: totalDocs || 0,
-            verifiedDocuments: verifiedDocs || 0,
-            sharedLinks: sharedLinks || 0,
+            totalDocuments: totalDocsResult.count || 0,
+            verifiedDocuments: verifiedDocsResult.count || 0,
+            sharedLinks: sharedLinksResult.count || 0,
             profileViews: 0,
-            storageUsed: profile?.storage_used || 0,
-            storageLimit: profile?.storage_limit || 0,
-            recentUploads: recentUploads || []
+            storageUsed: profileResult.data?.storage_used || 0,
+            storageLimit: profileResult.data?.storage_limit || 0,
+            recentUploads: recentUploadsResult.data || []
           };
           
           setStats(newStats);
