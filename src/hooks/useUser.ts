@@ -35,7 +35,7 @@ export function useUser() {
         if (authUser && isMounted) {
           const { data: profileData, error: profileError } = await supabase
             .from('profiles')
-            .select('*')
+            .select('id, email, first_name, last_name, avatar_url, bio, phone, portfolio_url, linkedin_url, github_url, twitter_url, website_url, storage_used, storage_limit, role, created_at, updated_at')
             .eq('id', authUser.id)
             .single()
             
@@ -79,7 +79,7 @@ export function useUser() {
             if (session?.user) {
               const { data: profileData, error: profileError } = await supabase
                 .from('profiles')
-                .select('*')
+                .select('id, email, first_name, last_name, avatar_url, bio, phone, portfolio_url, linkedin_url, github_url, twitter_url, website_url, storage_used, storage_limit, role, created_at, updated_at')
                 .eq('id', session.user.id)
                 .single()
                 

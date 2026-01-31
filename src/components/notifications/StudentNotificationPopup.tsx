@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { X, CheckCircle, XCircle, AlertCircle, Info } from 'lucide-react'
+import { useNotifications } from '@/hooks/useNotifications'
 
 interface Notification {
   id: string
@@ -13,40 +14,27 @@ interface Notification {
 }
 
 export function StudentNotificationPopup() {
-  const [notifications, setNotifications] = useState<Notification[]>([])
   const [currentNotification, setCurrentNotification] = useState<Notification | null>(null)
   const [isVisible, setIsVisible] = useState(false)
+  const { notifications, markAsRead } = useNotifications()
 
   useEffect(() => {
-    // Check for new notifications every 5 seconds
-    const interval = setInterval(async () => {
-      try {
-        // Use real notifications endpoint
-        const response = await fetch('/api/notifications')
-        const data = await response.json()
-        
-        // Handle both response formats
-        const notifications = data.notifications || data || []
-        const unreadNotifications = notifications.filter((n: Notification) => !n.read)
-        
-        if (unreadNotifications.length > 0) {
-          // Show the most recent unread notification
-          const latestNotification = unreadNotifications[0]
-          setCurrentNotification(latestNotification)
-          setIsVisible(true)
-          
-          // Auto-hide after 5 seconds
-          setTimeout(() => {
-            setIsVisible(false)
-          }, 5000)
-        }
-      } catch (error) {
-        console.error('Error fetching notifications:', error)
-      }
-    }, 5000)
-
-    return () => clearInterval(interval)
-  }, [])
+    // Show the latest unread notification from the realtime hook
+    const unreadNotifications = notifications.filter((n: Notification) => !n.read)
+    
+    if (unreadNotifications.length > 0) {
+      const latestNotification = unreadNotifications[0]
+      setCurrentNotification(latestNotification)
+      setIsVisible(true)
+      
+      // Auto-hide after 5 seconds
+      const timeout = setTimeout(() => {
+        setIsVisible(false)
+      }, 5000)
+      
+      return () => clearTimeout(timeout)
+    }
+  }, [notifications])
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -77,13 +65,9 @@ export function StudentNotificationPopup() {
   const handleClose = () => {
     setIsVisible(false)
     
-    // Mark notification as read
+    // Mark notification as read using the hook
     if (currentNotification) {
-      fetch('/api/notifications/read', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notificationId: currentNotification.id })
-      }).catch(console.error)
+      markAsRead(currentNotification.id)
     }
   }
 

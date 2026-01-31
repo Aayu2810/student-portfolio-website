@@ -22,29 +22,8 @@ export async function middleware(request: NextRequest) {
     }
   )
 
+  // Single auth call - no duplicates!
   const { data: { user } } = await supabase.auth.getUser()
-
-  // Check user's role for faculty routes
-  const { data: { user: authUser } } = await supabase.auth.getUser();
-  
-  if (authUser) {
-    // Fetch user profile to check role
-    const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', authUser.id)
-      .single();
-    
-    const userRole = profileData?.role;
-    
-    // If accessing faculty routes without faculty role
-    if (request.nextUrl.pathname.startsWith('/faculty') && 
-        userRole !== 'faculty' && userRole !== 'admin') {
-      const url = request.nextUrl.clone();
-      url.pathname = '/(dashboard)/dashboard';
-      return NextResponse.redirect(url);
-    }
-  }
   
   // If there is no user and the route is protected, redirect to login
   if (!user && (request.nextUrl.pathname.startsWith('/dashboard') || request.nextUrl.pathname.startsWith('/faculty'))) {
@@ -53,16 +32,28 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
   
-  // Redirect faculty users from student verification page
-  if (request.nextUrl.pathname.startsWith('/(dashboard)/verification') && 
-      user) {
-    const { data: profileData, error: profileError } = await supabase
+  // Only fetch profile if user exists and we're on protected routes
+  let userRole: string | null = null;
+  if (user && (request.nextUrl.pathname.startsWith('/faculty') || request.nextUrl.pathname.startsWith('/(dashboard)/verification'))) {
+    const { data: profileData } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single();
     
-    if (profileData?.role === 'faculty' || profileData?.role === 'admin') {
+    userRole = profileData?.role || null;
+    
+    // If accessing faculty routes without faculty role
+    if (request.nextUrl.pathname.startsWith('/faculty') && 
+        userRole !== 'faculty' && userRole !== 'admin') {
+      const url = request.nextUrl.clone();
+      url.pathname = '/dashboard';
+      return NextResponse.redirect(url);
+    }
+    
+    // Redirect faculty users from student verification page
+    if (request.nextUrl.pathname.startsWith('/(dashboard)/verification') && 
+        (userRole === 'faculty' || userRole === 'admin')) {
       const url = request.nextUrl.clone();
       url.pathname = '/faculty';
       return NextResponse.redirect(url);

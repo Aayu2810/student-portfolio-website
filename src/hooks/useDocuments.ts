@@ -24,7 +24,7 @@ export function useDocuments() {
         
         const { data, error } = await supabase
           .from('documents')
-          .select('*')
+          .select('id, user_id, title, description, category, tags, file_url, file_name, file_type, file_size, storage_path, thumbnail_url, is_favorite, is_public, views, downloads, created_at, updated_at')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
 
@@ -81,7 +81,7 @@ export function useDocuments() {
         const supabase = createClient()
         const { data } = await supabase
           .from('documents')
-          .select('*')
+          .select('id, user_id, title, description, category, tags, file_url, file_name, file_type, file_size, storage_path, thumbnail_url, is_favorite, is_public, views, downloads, created_at, updated_at')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
         setDocuments(data || [])
