@@ -56,21 +56,24 @@ export default function DashboardPage() {
     {
       icon: <FileText className="w-8 h-8" />,
       label: 'Total Documents',
-      value: statsLoading ? '—' : (dashboardStats?.totalDocuments?.toString() || '0'),
+      value: dashboardStats?.totalDocuments?.toString() || '0',
+      loading: statsLoading,
       color: 'from-blue-500 to-cyan-500',
       href: '/documents'
     },
     {
       icon: <CheckCircle className="w-8 h-8" />,
       label: 'Verified',
-      value: statsLoading ? '—' : (dashboardStats?.verifiedDocuments?.toString() || '0'),
+      value: dashboardStats?.verifiedDocuments?.toString() || '0',
+      loading: statsLoading,
       color: 'from-green-500 to-emerald-500',
       href: '/verification'
     },
     {
       icon: <Share2 className="w-8 h-8" />,
       label: 'Shared Links',
-      value: statsLoading ? '—' : (dashboardStats?.sharedLinks?.toString() || '0'),
+      value: dashboardStats?.sharedLinks?.toString() || '0',
+      loading: statsLoading,
       color: 'from-purple-500 to-pink-500',
       onClick: () => {
         generateShareLink();
@@ -81,6 +84,7 @@ export default function DashboardPage() {
       icon: <User className="w-8 h-8" />, 
       label: 'Profile',
       value: 'View',
+      loading: false,
       color: 'from-orange-500 to-red-500',
       href: '/profile'
     },
@@ -129,7 +133,11 @@ export default function DashboardPage() {
               </div>
               <div>
                 <p className="text-gray-400 text-sm mb-1">{stat.label}</p>
-                <p className="text-3xl font-bold text-white">{stat.value}</p>
+                {stat.loading ? (
+                  <div className="h-9 w-16 bg-gray-700/50 rounded animate-pulse"></div>
+                ) : (
+                  <p className="text-3xl font-bold text-white">{stat.value}</p>
+                )}
               </div>
             </div>
           ))}
