@@ -64,7 +64,7 @@ export default function DocumentsPage() {
         break
       case 'share':
         // Open share modal
-        setShareDocument({ id: docId, name: doc.title });
+        setShareDocument(doc);
         setShareModalOpen(true);
         break
       case 'copyLink':
