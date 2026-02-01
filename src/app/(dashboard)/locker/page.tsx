@@ -19,7 +19,7 @@ import { useRouter } from 'next/navigation'
 import { ShareModal } from '../../../components/sharing/ShareModal'
 
 export default function LockerPage() {
-  const { documents, loading, error, refetch, deleteDocument, updateDocument } = useDocuments()
+  const { documents, loading, error, mutate, deleteDocument, updateDocument } = useDocuments()
   const { user } = useUser()
   const router = useRouter()
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
@@ -81,7 +81,7 @@ export default function LockerPage() {
         break
       case 'copyLink':
         // Copy share link to clipboard
-        const shareLink = `${window.location.origin}/locker/${docId}`;
+        const shareLink = `${process.env.NEXT_PUBLIC_BASE_URL || window.location.origin}/locker/${docId}`;
         navigator.clipboard.writeText(shareLink);
         break
       case 'star':

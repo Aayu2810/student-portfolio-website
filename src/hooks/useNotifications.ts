@@ -58,7 +58,7 @@ export function useNotifications() {
         
         // Show popup notification for new notifications
         showNotification({
-          type: newNotification.type,
+          type: newNotification.type === 'warning' ? 'error' : newNotification.type,
           title: newNotification.title,
           message: newNotification.message,
           documentTitle: newNotification.data?.document_title,

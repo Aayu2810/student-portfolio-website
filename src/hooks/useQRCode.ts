@@ -100,7 +100,7 @@ export const useQRCode = () => {
       shareId: string,
       options?: QRCodeOptions
     ): Promise<QRCodeData | null> => {
-      const shareURL = `${window.location.origin}/shared/${shareId}`;
+      const shareURL = `${process.env.NEXT_PUBLIC_BASE_URL || window.location.origin}/shared/${shareId}`;
       
       const qrOptions: QRCodeOptions = {
         size: 300,

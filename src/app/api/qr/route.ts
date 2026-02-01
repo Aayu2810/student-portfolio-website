@@ -68,7 +68,11 @@ export async function POST(request: Request) {
     }
     
     // Construct the share URL
-    const shareUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/share/${shareCodeToUse}`;
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
+                   (request.headers.get('x-forwarded-host') ? 
+                    `https://${request.headers.get('x-forwarded-host')}` : 
+                    'http://localhost:3000');
+    const shareUrl = `${baseUrl}/shared/${shareCodeToUse}`;
     
     // Generate QR code data
     const qrData = await generateQRCode(shareUrl);

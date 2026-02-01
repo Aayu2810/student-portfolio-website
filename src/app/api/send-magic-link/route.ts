@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       success: true, 
       message: 'Magic link generated',
-      magicLink: data.action_link,
+      magicLink: data.properties?.action_link,
       email: email
     })
     

@@ -79,7 +79,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate share URL
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
+                   (request.headers.get('x-forwarded-host') ? 
+                    `https://${request.headers.get('x-forwarded-host')}` : 
+                    'http://localhost:3000')
     const shareUrl = `${baseUrl}/shared/${shareCode}`
 
     return NextResponse.json({ 

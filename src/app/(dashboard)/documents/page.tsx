@@ -69,7 +69,7 @@ export default function DocumentsPage() {
         break
       case 'copyLink':
         // Copy share link to clipboard
-        const shareLink = `${window.location.origin}/documents/${docId}`;
+        const shareLink = `${process.env.NEXT_PUBLIC_BASE_URL || window.location.origin}/documents/${docId}`;
         navigator.clipboard.writeText(shareLink);
         break
       case 'star':

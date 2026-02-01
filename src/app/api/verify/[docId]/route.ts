@@ -448,6 +448,18 @@ export async function POST(request: Request, { params }: { params: { docId: stri
         return Response.json({ error: 'Rejection reason is required' }, { status: 400 });
       }
       
+      // Fetch document details for notification
+      const { data: document, error: docError } = await supabase
+        .from('documents')
+        .select('title, user_id, file_url')
+        .eq('id', params.docId)
+        .single();
+
+      if (docError) {
+        console.error('Error fetching document:', docError);
+        return Response.json({ error: 'Document not found' }, { status: 404 });
+      }
+      
       // Update document status to rejected (is_public = false)
       const { error: docUpdateError } = await supabase
         .from('documents')
