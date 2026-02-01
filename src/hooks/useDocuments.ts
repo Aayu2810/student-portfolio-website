@@ -27,22 +27,14 @@ export function useDocuments() {
     () => fetchDocuments(user!.id),
     {
       revalidateOnFocus: false,
-      dedupingInterval: 5000, // Dedupe within 5s
+      dedupingInterval: 5000,
+      keepPreviousData: true, // Keep showing old data while fetching
+      revalidateOnMount: true, // Always fetch on mount
     }
   )
 
   const deleteDocument = async (documentId: string) => {
-    const supabase = createClient()
-    
     const { error } = await supabase
-      .from('documents')
-      .delete()
-      .eq('id', documentId)
-      .eq('user_id', user?.id)
-
-    if (error) throw error
-    
-    setDoc{ error } = await supabase
       .from('documents')
       .delete()
       .eq('id', documentId)
@@ -79,5 +71,10 @@ export function useDocuments() {
 
   return {
     documents: documents || [],
-    loading: isLoading,
-    error: error?.message || null
+    loading: !user || isLoading || (!documents && !error),
+    error: error?.message || null,
+    deleteDocument,
+    updateDocument,
+    mutate
+  }
+}

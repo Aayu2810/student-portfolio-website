@@ -75,18 +75,6 @@ const fetchDashboardStats = async (userId: string): Promise<DashboardStats> => {
 export function useDashboardStats() {
   const { user } = useUser();
   
-  // Use SWR for caching and automatic revalidation
-  const { data: stats, error, isLoading, mutate } = useSWR(
-    user ? ['dashboard-stats', user.id] : null,
-    () => fetchDashboardStats(user!.id),
-    {
-      revalidateOnFocus: false, // Don't refetch on window focus
-      revalidateOnReconnect: true, // Refetch on reconnect
-      dedupingInterval: 10000, // Dedupe requests within 10s
-      refreshInterval: 60000, // Auto refresh every 60s
-    }
-  );
-
   const defaultStats: DashboardStats = {
     totalDocuments: 0,
     verifiedDocuments: 0,
@@ -96,10 +84,23 @@ export function useDashboardStats() {
     storageLimit: 0,
     recentUploads: []
   };
+  
+  // Use SWR for caching and automatic revalidation
+  const { data: stats, error, isLoading, isValidating, mutate } = useSWR(
+    user ? ['dashboard-stats', user.id] : null,
+    () => fetchDashboardStats(user!.id),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+      dedupingInterval: 10000,
+      refreshInterval: 60000,
+      keepPreviousData: true, // Keep showing old data while fetching new
+    }
+  );
 
   return {
     stats: stats || defaultStats,
-    loading: isLoading,
+    loading: !user || isLoading || (!stats && !error), // True until we have data
     error: error?.message || null,
     refetch: mutate
   };
