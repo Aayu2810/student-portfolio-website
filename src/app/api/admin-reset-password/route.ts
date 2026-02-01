@@ -1,14 +1,9 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '../../../lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-
-// Use service role key for admin operations
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient()
     const { userId, newPassword } = await request.json()
     
     if (!userId || !newPassword) {
@@ -17,8 +12,8 @@ export async function POST(request: NextRequest) {
     
     console.log('Resetting password for user:', userId)
     
-    // Reset the user's password using service role
-    const { data, error } = await supabaseAdmin.auth.admin.updateUserById(
+    // Reset the user's password using admin API
+    const { data, error } = await supabase.auth.admin.updateUserById(
       userId,
       { password: newPassword }
     )
@@ -35,8 +30,7 @@ export async function POST(request: NextRequest) {
       message: 'Password reset successfully',
       user: {
         id: data.user?.id,
-        email: data.user?.email,
-        newPassword: newPassword
+        email: data.user?.email
       }
     })
     
