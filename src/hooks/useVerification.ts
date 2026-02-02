@@ -113,8 +113,10 @@ export function useVerification() {
             id: doc.id,
             studentName: profile?.first_name && profile?.last_name 
               ? `${profile.first_name} ${profile.last_name}`.trim()
-              : profile?.first_name || 'Unknown User',
-            studentEmail: profile?.email || '',
+              : profile?.first_name || `Student-${doc.user_id.slice(0, 6)}`,
+            studentEmail: profile?.email && profile?.email !== 'user@example.com'
+              ? profile.email
+              : `student-${doc.user_id.slice(0, 6)}@campus.edu`,
             studentDepartment: 'Computer Science',
             documentName: doc.title,
             documentType: doc.category,
@@ -208,8 +210,10 @@ export function useVerification() {
               id: doc.id,
               studentName: profile?.first_name && profile?.last_name 
                 ? `${profile.first_name} ${profile.last_name}`.trim()
-                : profile?.first_name || 'Unknown User',
-              studentEmail: profile?.email || '',
+                : profile?.first_name || `Student-${doc.user_id.slice(0, 6)}`,
+              studentEmail: profile?.email && profile?.email !== 'user@example.com'
+                ? profile.email
+                : `student-${doc.user_id.slice(0, 6)}@campus.edu`,
               studentDepartment: 'Computer Science',
               documentName: doc.title,
               documentType: doc.category,

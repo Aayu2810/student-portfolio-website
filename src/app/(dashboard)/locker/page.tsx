@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { FileText, Folder, Search, Grid, List, Plus, Download, Eye, Share2, MoreVertical, Star, Trash2, Edit3, FolderInput, Archive, CheckCircle } from 'lucide-react'
+import { FileText, Folder, Search, Grid, List, Plus, Download, Eye, Share2, MoreVertical, Star, Trash2, Edit3, FolderInput, Archive, CheckCircle, Filter, X } from 'lucide-react'
 import { createClient } from '../../../lib/supabase/client'
 import { Document } from '../../../types'
 import { Button } from '../../../components/ui/button'
@@ -10,7 +10,10 @@ import {
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuItem, 
-  DropdownMenuTrigger 
+  DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator
 } from '../../../components/ui/dropdown-menu'
 import { Badge } from '../../../components/ui/badge'
 import { useUser } from '../../../hooks/useUser'
@@ -18,12 +21,24 @@ import { useDocuments } from '../../../hooks/useDocuments'
 import { useRouter } from 'next/navigation'
 import { ShareModal } from '../../../components/sharing/ShareModal'
 
+// Categories from DocumentCategory component
+const categories = [
+  { id: "academic", name: "Academic", color: "text-blue-400" },
+  { id: "certificates", name: "Certificates", color: "text-yellow-400" },
+  { id: "professional", name: "Professional", color: "text-green-400" },
+  { id: "identity", name: "Identity", color: "text-red-400" },
+  { id: "personal", name: "Personal", color: "text-pink-400" },
+  { id: "property", name: "Property", color: "text-orange-400" },
+  { id: "other", name: "Other", color: "text-gray-400" },
+];
+
 export default function LockerPage() {
   const { documents, loading, error, mutate, deleteDocument, updateDocument } = useDocuments()
   const { user } = useUser()
   const router = useRouter()
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [searchQuery, setSearchQuery] = useState('')
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [shareModalOpen, setShareModalOpen] = useState(false)
   const [shareDocument, setShareDocument] = useState<{ id: string, name: string } | null>(null)
   const [page, setPage] = useState(1)
@@ -158,11 +173,34 @@ export default function LockerPage() {
   const filteredDocuments = useMemo(() => {
     if (!documents) return [];
     
-    return documents.filter(doc => 
-      doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doc.category.toLowerCase().includes(searchQuery.toLowerCase())
+    return documents.filter(doc => {
+      // Search filter
+      const matchesSearch = 
+        doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        doc.category.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // Category filter
+      const matchesCategory = 
+        selectedCategories.length === 0 || 
+        selectedCategories.includes(doc.category);
+      
+      return matchesSearch && matchesCategory;
+    });
+  }, [documents, searchQuery, selectedCategories]);
+
+  // Function to toggle category selection
+  const toggleCategory = (categoryId: string) => {
+    setSelectedCategories(prev => 
+      prev.includes(categoryId) 
+        ? prev.filter(id => id !== categoryId)
+        : [...prev, categoryId]
     );
-  }, [documents, searchQuery]);
+  };
+
+  // Function to clear all category filters
+  const clearCategories = () => {
+    setSelectedCategories([]);
+  };
 
   if (loading) {
     return (
@@ -194,17 +232,87 @@ export default function LockerPage() {
           </Button>
         </div>
         
-        {/* Search Bar */}
-        <div className="relative mb-6">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <Input
-            type="text"
-            placeholder="Search documents..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-          />
+        {/* Search Bar and Filters */}
+        <div className="flex gap-4 mb-6">
+          {/* Search Bar */}
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              type="text"
+              placeholder="Search documents..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+          </div>
+
+          {/* Category Filter Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="bg-gray-800 border-gray-700 text-white hover:bg-gray-700">
+                <Filter className="w-4 h-4 mr-2" />
+                Categories
+                {selectedCategories.length > 0 && (
+                  <Badge className="ml-2 bg-purple-600 text-white" variant="secondary">
+                    {selectedCategories.length}
+                  </Badge>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-gray-800 border-gray-700 text-white w-64">
+              <DropdownMenuLabel className="text-gray-300">Filter by Category</DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-gray-700" />
+              
+              {categories.map((category) => (
+                <DropdownMenuCheckboxItem
+                  key={category.id}
+                  checked={selectedCategories.includes(category.id)}
+                  onCheckedChange={() => toggleCategory(category.id)}
+                  className="hover:bg-gray-700 focus:bg-gray-700"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className={category.color}>
+                      {category.name.charAt(0).toUpperCase()}
+                    </span>
+                    <span>{category.name}</span>
+                  </div>
+                </DropdownMenuCheckboxItem>
+              ))}
+              
+              <DropdownMenuSeparator className="bg-gray-700" />
+              
+              {selectedCategories.length > 0 && (
+                <DropdownMenuItem 
+                  onClick={clearCategories}
+                  className="hover:bg-gray-700 focus:bg-gray-700 text-red-400"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Clear Filters
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
+
+        {/* Active Category Filters */}
+        {selectedCategories.length > 0 && (
+          <div className="flex gap-2 mb-4 flex-wrap">
+            {selectedCategories.map((categoryId) => {
+              const category = categories.find(c => c.id === categoryId);
+              return (
+                <Badge
+                  key={categoryId}
+                  variant="secondary"
+                  className="bg-purple-600/20 text-purple-300 border-purple-600/30 cursor-pointer hover:bg-purple-600/30"
+                  onClick={() => toggleCategory(categoryId)}
+                >
+                  {category?.name}
+                  <X className="w-3 h-3 ml-1" />
+                </Badge>
+              );
+            })}
+          </div>
+        )}
 
         {/* View Toggle */}
         <div className="flex justify-between items-center mb-6">
@@ -448,7 +556,10 @@ export default function LockerPage() {
       {shareDocument && (
         <ShareModal
           isOpen={shareModalOpen}
-          onClose={() => setShareModalOpen(false)}
+          onClose={() => {
+            setShareModalOpen(false);
+            setShareDocument(null);
+          }}
           documentName={shareDocument.name}
           documentId={shareDocument.id}
         />

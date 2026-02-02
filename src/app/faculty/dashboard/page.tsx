@@ -6,8 +6,10 @@ import { useUser } from '@/hooks/useUser'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { FileText, Download, CheckCircle, Calendar, User } from 'lucide-react'
+import { FileText, Download, CheckCircle, XCircle, Calendar, User, LogOut } from 'lucide-react'
 import { VerifyModal } from '@/components/verification/VerifyModal'
+import { getUserInfo, formatUserInfo } from '@/lib/userUtils'
+import { useRouter } from 'next/navigation'
 
 // Use singleton client for consistent auth state
 const supabase = getSupabaseClient();
@@ -33,15 +35,26 @@ export default function FacultyDashboard() {
   const [loading, setLoading] = useState(true);
   const [selectedDocument, setSelectedDocument] = useState<VerificationRequest | null>(null);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
-
-  // Wait for initialized && user && profile before fetching data
-  const isReady = initialized && user && profile;
+  const supabase = createClient();
+  const router = useRouter();
 
   useEffect(() => {
     if (isReady) {
       fetchVerificationRequests();
     }
   }, [isReady]);
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      // Redirect to Vercel production URL
+      window.location.href = 'https://student-portfolio-website-seven.vercel.app/';
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Fallback: force redirect even if signOut fails
+      window.location.href = 'https://student-portfolio-website-seven.vercel.app/';
+    }
+  };
 
   const handleDownload = async (document: VerificationRequest) => {
     try {
@@ -190,34 +203,9 @@ export default function FacultyDashboard() {
 
       if (error) throw error;
 
-      // Get user info from auth.users since profiles table is empty
+      // Get user info using utility function
       const userIds = data?.map(doc => doc.user_id) || [];
-      let userMap = new Map();
-      
-      // Try to get user info from auth.users directly
-      if (userIds.length > 0) {
-        try {
-          const { data: authUsers, error: authError } = await supabase
-            .from('auth.users')
-            .select('id, email, raw_user_meta_data')
-            .in('id', userIds);
-          
-          if (!authError && authUsers) {
-            userMap = new Map(
-              authUsers.map(user => [
-                user.id,
-                {
-                  email: user.email,
-                  first_name: user.raw_user_meta_data?.first_name || user.email?.split('@')[0] || 'Unknown',
-                  last_name: user.raw_user_meta_data?.last_name || ''
-                }
-              ])
-            );
-          }
-        } catch (authError) {
-          console.log('Could not access auth.users, using fallback');
-        }
-      }
+      const userMap = await getUserInfo(userIds);
 
       // Debug: Log the actual data structure
       console.log('Faculty dashboard raw data:', data?.[0]);
@@ -240,12 +228,7 @@ export default function FacultyDashboard() {
 
       const transformedRequests: VerificationRequest[] = data?.map(doc => {
         const userInfo = userMap.get(doc.user_id);
-        console.log('User info for document:', doc.user_id, userInfo);
-        
-        // Fallback to user ID if no profile info available
-        const displayName = userInfo?.first_name && userInfo?.last_name 
-          ? `${userInfo.first_name} ${userInfo.last_name}`.trim()
-          : userInfo?.first_name || `User ${doc.user_id.slice(0, 8)}`;
+        const { displayName, displayEmail } = formatUserInfo(userInfo, doc.user_id);
         
         return {
           id: doc.id,
@@ -255,7 +238,7 @@ export default function FacultyDashboard() {
           document_url: doc.file_url,
           document_storage_path: doc.storage_path,
           user_id: doc.user_id,
-          user_email: userInfo?.email || 'user@example.com',
+          user_email: displayEmail,
           user_name: displayName,
           status: doc.is_public ? 'approved' : (rejectedDocIds.has(doc.id) ? 'rejected' : 'pending'),
           created_at: doc.created_at,
@@ -287,8 +270,20 @@ export default function FacultyDashboard() {
     <div className="min-h-screen bg-gray-900 text-white p-8">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">Verification Requests</h1>
-          <p className="text-gray-400">Review and verify student documents</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl font-bold text-white mb-2">Verification Requests</h1>
+              <p className="text-gray-400">Review and verify student documents</p>
+            </div>
+            <Button
+              onClick={handleLogout}
+              variant="outline"
+              className="border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Logout
+            </Button>
+          </div>
         </div>
 
         {requests.length === 0 ? (

@@ -23,7 +23,7 @@ export interface Document {
   user_id: string
   title: string
   description?: string
-  category: 'resume' | 'certificate' | 'transcript' | 'project' | 'other'
+  category: 'academic' | 'certificates' | 'professional' | 'identity' | 'personal' | 'property' | 'other'
   tags: string[]
   file_url: string
   file_name: string

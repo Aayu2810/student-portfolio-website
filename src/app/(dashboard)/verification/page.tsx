@@ -6,7 +6,7 @@ import { useVerification } from '@/hooks/useVerification'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { FileText, Calendar, User, Eye, Download, ExternalLink } from 'lucide-react'
+import { FileText, Calendar, User, Download, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
 
 export default function VerificationPage() {
@@ -79,20 +79,8 @@ export default function VerificationPage() {
         </div>
 
         {documents.length === 0 ? (
-          <div className="text-center py-12">
-            <FileText className="w-16 h-16 mx-auto text-gray-600 mb-4" />
-            <h3 className="text-xl font-semibold mb-2">No verification requests found</h3>
-            <p className="text-gray-400 mb-6">
-              {userRole === 'faculty' 
-                ? "There are no documents pending verification."
-                : "You haven't submitted any documents for verification yet."
-              }
-            </p>
-            {userRole !== 'faculty' && (
-              <Link href="/dashboard">
-                <Button>Upload Documents</Button>
-              </Link>
-            )}
+          <div className="grid gap-6">
+            {/* Empty grid to maintain layout structure */}
           </div>
         ) : (
           <div className="grid gap-6">
@@ -145,12 +133,6 @@ export default function VerificationPage() {
                   )}
 
                   <div className="flex gap-2">
-                    <Link href={`/verification/${doc.id}`}>
-                      <Button variant="outline" size="sm">
-                        <Eye className="w-4 h-4 mr-2" />
-                        View Details
-                      </Button>
-                    </Link>
                     {doc.file_url && (
                       <Button variant="outline" size="sm" asChild>
                         <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
