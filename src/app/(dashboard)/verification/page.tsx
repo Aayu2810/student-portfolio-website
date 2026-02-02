@@ -78,20 +78,8 @@ export default function VerificationPage() {
         </div>
 
         {documents.length === 0 ? (
-          <div className="text-center py-12">
-            <FileText className="w-16 h-16 mx-auto text-gray-600 mb-4" />
-            <h3 className="text-xl font-semibold mb-2">No verification requests found</h3>
-            <p className="text-gray-400 mb-6">
-              {userRole === 'faculty' 
-                ? "There are no documents pending verification."
-                : "You haven't submitted any documents for verification yet."
-              }
-            </p>
-            {userRole !== 'faculty' && (
-              <Link href="/dashboard">
-                <Button>Upload Documents</Button>
-              </Link>
-            )}
+          <div className="grid gap-6">
+            {/* Empty grid to maintain layout structure */}
           </div>
         ) : (
           <div className="grid gap-6">
