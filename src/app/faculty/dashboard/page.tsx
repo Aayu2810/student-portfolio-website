@@ -40,11 +40,12 @@ export default function FacultyDashboard() {
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
-      router.push('/(auth)/faculty-login');
+      // Redirect to Vercel production URL
+      window.location.href = 'https://student-portfolio-website-seven.vercel.app/';
     } catch (error) {
       console.error('Logout error:', error);
       // Fallback: force redirect even if signOut fails
-      window.location.href = '/(auth)/faculty-login';
+      window.location.href = 'https://student-portfolio-website-seven.vercel.app/';
     }
   };
 
