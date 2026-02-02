@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { ActivityTimeline } from '@/components/audit/ActivityTimeline';
-import { Shield, Activity, Clock, Users, TrendingUp, Eye, CheckCircle } from 'lucide-react';
+import { Shield, Activity, Clock, Users, TrendingUp, Eye, CheckCircle, Upload } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { useUser } from '@/hooks/useUser';
 
 interface Stats {
   totalActivities: number;
@@ -13,6 +14,7 @@ interface Stats {
 }
 
 export default function AuditLogsPage() {
+  const { user } = useUser();
   const [stats, setStats] = useState<Stats>({
     totalActivities: 0,
     recentViews: 0,
@@ -23,6 +25,11 @@ export default function AuditLogsPage() {
   const supabase = createClient();
 
   const fetchStats = async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
     try {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -36,38 +43,40 @@ export default function AuditLogsPage() {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      // Total activities (last 30 days)
+      // Total activities (last 30 days) - filter by current user
       const { count: totalActivities } = await supabase
         .from('access_logs')
         .select('*', { count: 'exact', head: true })
+        .eq('accessed_by', user.id)
         .gte('accessed_at', thirtyDaysAgo.toISOString());
 
-      // Recent views (last 7 days)
+      // Recent views (last 7 days) - filter by current user
       const { count: recentViews } = await supabase
         .from('access_logs')
         .select('*', { count: 'exact', head: true })
+        .eq('accessed_by', user.id)
         .eq('action', 'view')
         .gte('accessed_at', sevenDaysAgo.toISOString());
 
-      // Verifications (this month)
+      // Verifications (this month) - filter by current user
       const { count: verifications } = await supabase
         .from('verifications')
         .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
         .gte('created_at', startOfMonth.toISOString());
 
-      // Active users (today)
-      const { data: activeUsersData } = await supabase
-        .from('access_logs')
-        .select('accessed_by')
-        .gte('accessed_at', today.toISOString());
-
-      const uniqueActiveUsers = new Set(activeUsersData?.map(log => log.accessed_by)).size;
+      // Document count (today) - filter by current user
+      const { count: documentCount } = await supabase
+        .from('documents')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .gte('created_at', today.toISOString());
 
       setStats({
         totalActivities: totalActivities || 0,
         recentViews: recentViews || 0,
         verifications: verifications || 0,
-        activeUsers: uniqueActiveUsers
+        activeUsers: documentCount || 0
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -77,9 +86,11 @@ export default function AuditLogsPage() {
   };
 
   useEffect(() => {
+    if (!user) return;
+    
     fetchStats();
 
-    // Set up real-time subscriptions for stats updates
+    // Set up real-time subscriptions for stats updates - filter by current user
     const accessLogsSubscription = supabase
       .channel('stats_access_logs')
       .on('postgres_changes', 
@@ -88,8 +99,11 @@ export default function AuditLogsPage() {
           schema: 'public', 
           table: 'access_logs' 
         }, 
-        () => {
-          fetchStats(); // Refresh stats when access logs change
+        (payload: any) => {
+          // Only refresh if it's the current user's activity
+          if (payload.new?.accessed_by === user.id || payload.old?.accessed_by === user.id) {
+            fetchStats();
+          }
         }
       )
       .subscribe();
@@ -102,8 +116,28 @@ export default function AuditLogsPage() {
           schema: 'public',
           table: 'verifications'
         },
-        () => {
-          fetchStats(); // Refresh stats when verifications change
+        (payload: any) => {
+          // Only refresh if it's the current user's verification
+          if (payload.new?.user_id === user.id || payload.old?.user_id === user.id) {
+            fetchStats();
+          }
+        }
+      )
+      .subscribe();
+
+    const documentsSubscription = supabase
+      .channel('stats_documents')
+      .on('postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'documents'
+        },
+        (payload: any) => {
+          // Only refresh if it's the current user's document
+          if (payload.new?.user_id === user.id || payload.old?.user_id === user.id) {
+            fetchStats();
+          }
         }
       )
       .subscribe();
@@ -111,8 +145,9 @@ export default function AuditLogsPage() {
     return () => {
       accessLogsSubscription.unsubscribe();
       verificationsSubscription.unsubscribe();
+      documentsSubscription.unsubscribe();
     };
-  }, []);
+  }, [user]);
 
   const StatCard = ({ 
     title, 
@@ -152,10 +187,10 @@ export default function AuditLogsPage() {
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-white mb-2 flex items-center gap-3">
             <Shield className="w-8 h-8 text-purple-400" />
-            Audit Logs
+            My Activity Logs
           </h1>
           <p className="text-gray-400 text-lg">
-            Real-time monitoring of all document activities and security events
+            Real-time monitoring of your document activities and security events
           </p>
         </div>
 
@@ -189,10 +224,10 @@ export default function AuditLogsPage() {
           />
           
           <StatCard
-            title="Active Users"
+            title="Documents Today"
             value={stats.activeUsers}
-            subtitle="Today"
-            icon={Users}
+            subtitle="Uploaded today"
+            icon={Upload}
             color="text-cyan-400"
             bgColor="bg-cyan-500/10"
           />

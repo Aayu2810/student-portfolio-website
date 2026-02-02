@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useUser } from '@/hooks/useUser';
 import { 
   CheckCircle, 
   Eye, 
@@ -83,11 +84,17 @@ export function ActivityTimeline() {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useUser();
   const supabase = createClient();
 
   const fetchActivities = async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
     try {
-      // Fetch from access_logs table
+      // Fetch from access_logs table - filter by current user
       const { data: accessLogs, error: accessError } = await supabase
         .from('access_logs')
         .select(`
@@ -101,6 +108,7 @@ export function ActivityTimeline() {
           accessed_at,
           documents!inner(title)
         `)
+        .eq('accessed_by', user.id) // Filter by current user
         .order('accessed_at', { ascending: false })
         .limit(20);
 
@@ -108,7 +116,7 @@ export function ActivityTimeline() {
         console.error('Error fetching access logs:', accessError);
       }
 
-      // Fetch verification logs
+      // Fetch verification logs - filter by current user
       const { data: verificationLogs, error: verificationError } = await supabase
         .from('verifications')
         .select(`
@@ -121,6 +129,7 @@ export function ActivityTimeline() {
           documents!inner(title),
           profiles!inner(first_name, last_name)
         `)
+        .eq('user_id', user.id) // Filter by current user
         .order('created_at', { ascending: false })
         .limit(20);
 
@@ -186,10 +195,12 @@ export function ActivityTimeline() {
   };
 
   useEffect(() => {
+    if (!user) return;
+
     // Initial fetch
     fetchActivities();
 
-    // Set up real-time subscriptions
+    // Set up real-time subscriptions - filter by current user
     const accessLogsSubscription = supabase
       .channel('access_logs_changes')
       .on('postgres_changes', 
@@ -198,9 +209,12 @@ export function ActivityTimeline() {
           schema: 'public', 
           table: 'access_logs' 
         }, 
-        (payload) => {
+        (payload: any) => {
           console.log('Access log change detected:', payload);
-          fetchActivities(); // Refresh activities when access logs change
+          // Only refresh if it's the current user's activity
+          if (payload.new?.accessed_by === user.id || payload.old?.accessed_by === user.id) {
+            fetchActivities();
+          }
         }
       )
       .subscribe();
@@ -213,9 +227,12 @@ export function ActivityTimeline() {
           schema: 'public',
           table: 'verifications'
         },
-        (payload) => {
+        (payload: any) => {
           console.log('Verification change detected:', payload);
-          fetchActivities(); // Refresh activities when verifications change
+          // Only refresh if it's the current user's verification
+          if (payload.new?.user_id === user.id || payload.old?.user_id === user.id) {
+            fetchActivities();
+          }
         }
       )
       .subscribe();
@@ -228,10 +245,13 @@ export function ActivityTimeline() {
           schema: 'public',
           table: 'documents'
         },
-        (payload) => {
+        (payload: any) => {
           console.log('Document change detected:', payload);
-          // Small delay to ensure related tables are updated
-          setTimeout(fetchActivities, 500);
+          // Only refresh if it's the current user's document
+          if (payload.new?.user_id === user.id || payload.old?.user_id === user.id) {
+            // Small delay to ensure related tables are updated
+            setTimeout(fetchActivities, 500);
+          }
         }
       )
       .subscribe();
@@ -241,7 +261,7 @@ export function ActivityTimeline() {
       verificationsSubscription.unsubscribe();
       documentsSubscription.unsubscribe();
     };
-  }, []);
+  }, [user]);
 
   const formatTimeAgo = (timestamp: string) => {
     const now = new Date();
@@ -285,8 +305,8 @@ export function ActivityTimeline() {
     return (
       <div className="text-center py-12">
         <Shield className="w-16 h-16 mx-auto text-green-400 mb-4" />
-        <h3 className="text-xl font-semibold text-white mb-2">No suspicious activity detected</h3>
-        <p className="text-gray-400">All document activities are being monitored and secured</p>
+        <h3 className="text-xl font-semibold text-white mb-2">No recent activity</h3>
+        <p className="text-gray-400">Your document activities will appear here</p>
       </div>
     );
   }
