@@ -92,12 +92,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to save document' }, { status: 500 })
     }
 
-    await supabase
-      .from('profiles')
-      .update({ 
-        storage_used: (profile?.storage_used || 0) + file.size 
-      })
-      .eq('id', user.id)
+    // Update storage usage - use atomic increment to avoid race conditions
+    const { error: storageError } = await supabase.rpc('increment_storage', {
+      user_id_param: user.id,
+      bytes: file.size
+    })
+
+    if (storageError) {
+      console.error('Storage update error:', storageError)
+      // Non-critical, continue anyway
+    }
 
     return NextResponse.json({ success: true, document }, { status: 200 })
 

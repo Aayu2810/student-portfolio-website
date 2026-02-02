@@ -1,8 +1,9 @@
 import { createClient } from '../../../../lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
-export async function GET(request: Request, { params }: { params: { docId: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ docId: string }> }) {
   try {
+    const { docId } = await params
     const supabase = await createClient()
     
     // Get current user to verify faculty role
@@ -27,7 +28,7 @@ export async function GET(request: Request, { params }: { params: { docId: strin
     const { data: document, error: docError } = await supabase
       .from('documents')
       .select('id, title, category, created_at, is_public, file_url, storage_path, file_name, file_type')
-      .eq('id', params.docId)
+      .eq('id', docId)
       .single();
 
     if (docError) {

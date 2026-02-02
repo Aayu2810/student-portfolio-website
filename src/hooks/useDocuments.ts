@@ -34,44 +34,60 @@ export function useDocuments() {
   )
 
   const deleteDocument = async (documentId: string) => {
-    const { error } = await supabase
-      .from('documents')
-      .delete()
-      .eq('id', documentId)
-      .eq('user_id', user?.id)
+    try {
+      // Use the API endpoint which handles both storage and database cleanup
+      const response = await fetch(`/api/locker/${documentId}`, {
+        method: 'DELETE',
+      })
 
-    if (error) throw error
-    
-    // Optimistic update - remove from cache immediately
-    mutate(
-      (docs) => docs?.filter(doc => doc.id !== documentId),
-      { revalidate: false }
-    )
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to delete document')
+      }
+      
+      // Optimistic update - remove from cache immediately
+      mutate(
+        (docs) => docs?.filter(doc => doc.id !== documentId),
+        { revalidate: false }
+      )
+    } catch (error) {
+      console.error('Error deleting document:', error)
+      throw error
+    }
   }
 
   const updateDocument = async (documentId: string, updates: Partial<Document>) => {
-    const { data, error } = await supabase
-      .from('documents')
-      .update(updates)
-      .eq('id', documentId)
-      .eq('user_id', user?.id)
-      .select()
-      .single()
+    try {
+      // Use the API endpoint for consistency
+      const response = await fetch(`/api/locker/${documentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      })
 
-    if (error) throw error
-    
-    // Optimistic update - update cache immediately
-    mutate(
-      (docs) => docs?.map(doc => doc.id === documentId ? { ...doc, ...data } : doc),
-      { revalidate: false }
-    )
-    
-    return data
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to update document')
+      }
+
+      const { document: data } = await response.json()
+      
+      // Optimistic update - update cache immediately
+      mutate(
+        (docs) => docs?.map(doc => doc.id === documentId ? { ...doc, ...data } : doc),
+        { revalidate: false }
+      )
+      
+      return data
+    } catch (error) {
+      console.error('Error updating document:', error)
+      throw error
+    }
   }
 
   return {
     documents: documents || [],
-    loading: !user || isLoading || (!documents && !error),
+    loading: isLoading,
     error: error?.message || null,
     deleteDocument,
     updateDocument,

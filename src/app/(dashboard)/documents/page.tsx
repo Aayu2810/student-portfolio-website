@@ -69,7 +69,7 @@ export default function DocumentsPage() {
         break
       case 'copyLink':
         // Copy share link to clipboard
-        const shareLink = `${process.env.NEXT_PUBLIC_BASE_URL || window.location.origin}/documents/${docId}`;
+        const shareLink = `${window.location.origin}/documents/${docId}`;
         navigator.clipboard.writeText(shareLink);
         break
       case 'star':
@@ -78,6 +78,7 @@ export default function DocumentsPage() {
           await updateDocument(docId, { is_favorite: !doc.is_favorite });
         } catch (err) {
           console.error('Error toggling favorite:', err);
+          alert('Failed to update favorite status. Please try again.');
         }
         break
       case 'rename':
@@ -93,8 +94,10 @@ export default function DocumentsPage() {
         if (confirm('Are you sure you want to delete this document?')) {
           try {
             await deleteDocument(docId);
+            alert('Document deleted successfully');
           } catch (err) {
             console.error('Error deleting document:', err);
+            alert('Failed to delete document. Please try again.');
           }
         }
         break

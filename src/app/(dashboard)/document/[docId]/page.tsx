@@ -87,7 +87,7 @@ export default function DocumentPage({ params }: { params: { docId: string } }) 
         break
       case 'copyLink':
         // Copy share link
-        navigator.clipboard.writeText(`${process.env.NEXT_PUBLIC_BASE_URL || window.location.origin}/document/${params.docId}`)
+        navigator.clipboard.writeText(`${window.location.origin}/document/${params.docId}`)
         break
       case 'star':
         // Toggle favorite

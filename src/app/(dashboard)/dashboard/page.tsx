@@ -24,22 +24,38 @@ export default function DashboardPage() {
 
   // Memoize expensive callback
   const generateShareLink = useCallback(async () => {
-    if (!user) return;
+    if (!user || !documents || documents.length === 0) return;
     
     try {
-      // Generate a temporary share link for the user's documents
-      const tempShareCode = Math.random().toString(36).substring(2, 10);
-      const generatedLink = `https://student-portfolio-website-seven.vercel.app/shared/${tempShareCode}`;
+      // Get all document IDs (limit to 10 as per API constraint)
+      const documentIds = documents.slice(0, 10).map(doc => doc.id);
       
-      setShareLink(generatedLink);
+      // Call the real share API
+      const response = await fetch('/api/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          document_ids: documentIds,
+          expires_in_hours: parseInt(expiresIn) || 24,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create share link');
+      }
+
+      const data = await response.json();
+      setShareLink(data.share_url);
       
       // Generate QR code
-      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(generatedLink)}`;
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(data.share_url)}`;
       setQrDataUrl(qrUrl);
     } catch (error) {
       console.error('Error generating share link:', error);
+      alert('Failed to generate share link. Please try again.');
     }
-  }, [user]);
+  }, [user, documents, expiresIn]);
 
   const viewAttestedDocument = useCallback(async (doc: any) => {
     setSelectedDocument(doc);

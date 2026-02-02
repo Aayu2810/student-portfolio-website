@@ -200,8 +200,9 @@ async function addRVCELogoToDocument(docId: string, documentUrl: string, supabas
   }
 }
 
-export async function GET(request: Request, { params }: { params: { docId: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ docId: string }> }) {
   try {
+    const { docId } = await params
     const supabase = await createClient();
     
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -223,7 +224,7 @@ export async function GET(request: Request, { params }: { params: { docId: strin
         user_id,
         profiles(first_name, last_name, email)
       `)
-      .eq('id', params.docId)
+      .eq('id', docId)
       .single();
 
     if (docError) {
@@ -301,8 +302,9 @@ export async function GET(request: Request, { params }: { params: { docId: strin
   }
 }
 
-export async function POST(request: Request, { params }: { params: { docId: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ docId: string }> }) {
   try {
+    const { docId } = await params
     const supabase = await createClient();
     
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -330,7 +332,7 @@ export async function POST(request: Request, { params }: { params: { docId: stri
       const { data: document, error: docError } = await supabase
         .from('documents')
         .select('file_url, storage_path, file_name, file_type, title, user_id')
-        .eq('id', params.docId)
+        .eq('id', docId)
         .single();
 
       if (docError) {
@@ -339,7 +341,7 @@ export async function POST(request: Request, { params }: { params: { docId: stri
       }
 
       // Add RVCE logo to the document (this is where the actual logo overlay would happen)
-      const processedResult = await addRVCELogoToDocument(params.docId, document.file_url, supabase, document.storage_path, document.file_type, document.file_name);
+      const processedResult = await addRVCELogoToDocument(docId, document.file_url, supabase, document.storage_path, document.file_type, document.file_name);
       const processedUrl = processedResult.publicUrl;
       const newStoragePath = processedResult.storagePath;
 
@@ -352,7 +354,7 @@ export async function POST(request: Request, { params }: { params: { docId: stri
           file_url: processedUrl, // Update URL if the document was processed
           storage_path: newStoragePath // Update storage path as well
         })
-        .eq('id', params.docId);
+        .eq('id', docId);
       
       if (docUpdateError) {
         console.error('Error updating document verification status:', docUpdateError);
@@ -363,7 +365,7 @@ export async function POST(request: Request, { params }: { params: { docId: stri
       const { data: existingVerification, error: fetchError } = await supabase
         .from('verifications')
         .select('id')
-        .eq('document_id', params.docId)
+        .eq('document_id', docId)
         .single();
       
       let verificationResult;
@@ -372,7 +374,7 @@ export async function POST(request: Request, { params }: { params: { docId: stri
         verificationResult = await supabase
           .from('verifications')
           .insert({
-            document_id: params.docId,
+            document_id: docId,
             verifier_id: user.id,
             status: 'approved',
             updated_at: new Date().toISOString()
@@ -398,7 +400,7 @@ export async function POST(request: Request, { params }: { params: { docId: stri
       const logResult = await supabase
         .from('verification_logs')
         .insert({
-          verification_id: params.docId,
+          verification_id: docId,
           action: 'verified',
           performer_id: user.id,
           performer_role: profileData?.role,
@@ -427,7 +429,7 @@ export async function POST(request: Request, { params }: { params: { docId: stri
           user_id: user.id,
           action: 'approve',
           resource_type: 'document',
-          resource_id: params.docId,
+          resource_id: docId,
           details: {
             document_title: document.title,
             document_owner_id: document.user_id,
@@ -452,7 +454,7 @@ export async function POST(request: Request, { params }: { params: { docId: stri
       const { data: document, error: docError } = await supabase
         .from('documents')
         .select('title, user_id, file_url')
-        .eq('id', params.docId)
+        .eq('id', docId)
         .single();
 
       if (docError) {
@@ -467,7 +469,7 @@ export async function POST(request: Request, { params }: { params: { docId: stri
           is_public: false,
           updated_at: new Date().toISOString()
         })
-        .eq('id', params.docId);
+        .eq('id', docId);
 
       if (docUpdateError) {
         console.error('Error updating document verification status:', docUpdateError);
@@ -478,7 +480,7 @@ export async function POST(request: Request, { params }: { params: { docId: stri
       const { data: existingVerification, error: fetchError } = await supabase
         .from('verifications')
         .select('id')
-        .eq('document_id', params.docId)
+        .eq('document_id', docId)
         .single();
       
       let verificationResult;
@@ -487,7 +489,7 @@ export async function POST(request: Request, { params }: { params: { docId: stri
         verificationResult = await supabase
           .from('verifications')
           .insert({
-            document_id: params.docId,
+            document_id: docId,
             verifier_id: user.id,
             status: 'rejected',
             rejection_reason: reason,
@@ -525,7 +527,7 @@ export async function POST(request: Request, { params }: { params: { docId: stri
       const logResult = await supabase
         .from('verification_logs')
         .insert({
-          verification_id: params.docId,
+          verification_id: docId,
           action: 'rejected',
           performer_id: user.id,
           performer_role: profileData?.role,
