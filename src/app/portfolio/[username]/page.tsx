@@ -32,21 +32,20 @@ export default function UserPortfolioPage() {
       }
 
       try {
-        // For now, we'll use username as userId. In a real system, you'd have a mapping
-        const response = await fetch(`/api/portfolio/public/${username}`)
-        
-        if (!response.ok) {
-          if (response.status === 404) {
-            setError('Portfolio not found or not public')
-          } else {
-            setError('Failed to load portfolio')
-          }
-          setLoading(false)
-          return
+        // For demo purposes, show a sample portfolio
+        // In a real implementation, this would fetch from a database
+        const demoPortfolio: PortfolioData = {
+          title: 'John Doe\'s Portfolio',
+          tagline: 'Full Stack Developer & UI/UX Designer',
+          about: 'Passionate developer with 5+ years of experience building modern web applications. Specialized in React, Node.js, and cloud technologies. Love creating intuitive user experiences and solving complex problems.',
+          skills: ['React', 'TypeScript', 'Node.js', 'GraphQL', 'AWS', 'Docker', 'UI/UX Design'],
+          theme: 'modern',
+          custom_domain: 'john-doe.dev',
+          is_public: true,
+          enable_qr_code: true
         }
-
-        const data = await response.json()
-        setPortfolio(data.portfolio)
+        
+        setPortfolio(demoPortfolio)
       } catch (err) {
         setError('Failed to load portfolio')
       } finally {
