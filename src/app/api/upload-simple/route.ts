@@ -28,7 +28,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
     }
 
-    const allowedCategories = ['resume', 'certificate', 'transcript', 'project', 'other'];
+    // Validate category against allowed values (matching DocumentCategory component)
+    const allowedCategories = ['academic', 'certificates', 'professional', 'identity', 'personal', 'property', 'other'];
     const validCategory = allowedCategories.includes(category) ? category : 'other';
 
     const maxSize = 50 * 1024 * 1024

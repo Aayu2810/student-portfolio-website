@@ -6,7 +6,7 @@ import { useVerification } from '@/hooks/useVerification'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { FileText, Calendar, User, Eye, Download, ExternalLink } from 'lucide-react'
+import { FileText, Calendar, User, Download, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
 
 export default function VerificationPage() {
@@ -144,12 +144,6 @@ export default function VerificationPage() {
                   )}
 
                   <div className="flex gap-2">
-                    <Link href={`/verification/${doc.id}`}>
-                      <Button variant="outline" size="sm">
-                        <Eye className="w-4 h-4 mr-2" />
-                        View Details
-                      </Button>
-                    </Link>
                     {doc.file_url && (
                       <Button variant="outline" size="sm" asChild>
                         <a href={doc.file_url} target="_blank" rel="noopener noreferrer">

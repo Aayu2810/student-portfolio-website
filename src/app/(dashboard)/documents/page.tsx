@@ -479,7 +479,10 @@ export default function DocumentsPage() {
       {shareDocument && (
         <DocumentShareModal
           documentIds={[shareDocument.id]}
-          onClose={() => setShareModalOpen(false)}
+          onClose={() => {
+            setShareModalOpen(false);
+            setShareDocument(null);
+          }}
         />
       )}
     </div>
