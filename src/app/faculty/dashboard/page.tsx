@@ -1,12 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useState, useEffect, useCallback } from 'react'
+import { getSupabaseClient } from '@/lib/supabase/client'
+import { useUser } from '@/hooks/useUser'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { FileText, Download, CheckCircle, XCircle, Calendar, User } from 'lucide-react'
+import { FileText, Download, CheckCircle, Calendar, User } from 'lucide-react'
 import { VerifyModal } from '@/components/verification/VerifyModal'
+
+// Use singleton client for consistent auth state
+const supabase = getSupabaseClient();
 
 interface VerificationRequest {
   id: string;
@@ -24,15 +28,20 @@ interface VerificationRequest {
 }
 
 export default function FacultyDashboard() {
+  const { user, profile, initialized } = useUser();
   const [requests, setRequests] = useState<VerificationRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDocument, setSelectedDocument] = useState<VerificationRequest | null>(null);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
-  const supabase = createClient();
+
+  // Wait for initialized && user && profile before fetching data
+  const isReady = initialized && user && profile;
 
   useEffect(() => {
-    fetchVerificationRequests();
-  }, []);
+    if (isReady) {
+      fetchVerificationRequests();
+    }
+  }, [isReady]);
 
   const handleDownload = async (document: VerificationRequest) => {
     try {
@@ -122,17 +131,18 @@ export default function FacultyDashboard() {
 
   // Set up real-time subscription for document updates
   useEffect(() => {
-    const supabase = createClient();
-    
+    // Wait for auth to be ready before subscribing
+    if (!isReady) return;
+
     // Subscribe to document changes
     const subscription = supabase
       .channel('document-changes')
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'documents' 
-        }, 
+      .on('postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'documents'
+        },
         (payload) => {
           console.log('Document change detected:', payload);
           // Refresh the dashboard when documents change
@@ -156,7 +166,7 @@ export default function FacultyDashboard() {
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [isReady]);
 
   // Separate function to fetch requests
   const fetchVerificationRequests = async () => {
@@ -261,7 +271,8 @@ export default function FacultyDashboard() {
     }
   };
 
-  if (loading) {
+  // Show loading while auth is initializing or data is loading
+  if (!isReady || loading) {
     return (
       <div className="min-h-screen bg-gray-900 text-white p-8">
         <div className="text-center">

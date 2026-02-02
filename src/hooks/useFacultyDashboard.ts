@@ -1,9 +1,12 @@
 // Faculty Dashboard Hook with Optimized Caching
 import { useEffect } from 'react';
-import { createClient } from '../lib/supabase/client';
+import { getSupabaseClient } from '../lib/supabase/client';
 import { useUser } from './useUser';
 import { CACHE_CONFIG, CACHE_KEYS, createOptimizedFetcher, getMemoryCache, setMemoryCache } from '../lib/cache';
 import useSWR from 'swr';
+
+// Use singleton client for consistent auth state
+const supabase = getSupabaseClient();
 
 export interface FacultyStats {
   totalDocuments: number;
@@ -35,8 +38,6 @@ const facultyStatsFetcher = createOptimizedFetcher(
       console.log('Memory cache hit for faculty stats');
       return memCache;
     }
-
-    const supabase = createClient();
     
     // Get total documents count
     const { count: totalDocs } = await supabase
@@ -92,8 +93,6 @@ const facultyDocumentsFetcher = createOptimizedFetcher(
       console.log('Memory cache hit for faculty documents');
       return memCache;
     }
-
-    const supabase = createClient();
     
     const { data, error } = await supabase
       .from('documents')
@@ -130,10 +129,10 @@ const facultyDocumentsFetcher = createOptimizedFetcher(
 );
 
 export function useFacultyDashboard() {
-  const { user, profile } = useUser();
-  
-  // Only fetch if user is faculty or admin
-  const isEnabled = user && (profile?.role === 'faculty' || profile?.role === 'admin');
+  const { user, profile, initialized } = useUser();
+
+  // Only fetch if initialized AND user AND profile with faculty/admin role
+  const isEnabled = initialized && user && profile && (profile.role === 'faculty' || profile.role === 'admin');
   
   const { data: stats, error: statsError, mutate: mutateStats } = useSWR<FacultyStats>(
     isEnabled ? CACHE_KEYS.facultyStats() : null,
@@ -170,8 +169,6 @@ export function useFacultyDashboard() {
   // Set up real-time subscriptions for faculty
   useEffect(() => {
     if (!isEnabled) return;
-    
-    const supabase = createClient();
     
     // Listen for verification updates
     const verificationChannel = supabase

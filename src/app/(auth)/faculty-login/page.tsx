@@ -2,7 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { getSupabaseClient } from '@/lib/supabase/client';
+
+// Use singleton client for consistent auth state
+const supabase = getSupabaseClient();
 
 export default function FacultyLoginPage() {
   const [email, setEmail] = useState('');
@@ -17,45 +20,36 @@ export default function FacultyLoginPage() {
     setError(null);
 
     try {
-      const supabase = createClient();
-
-      const { error: authError } = await supabase.auth.signInWithPassword({
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (authError) {
-        throw authError;
+      if (signInError) {
+        setError(signInError.message);
+        setLoading(false);
+        return;
       }
 
-      // Check if user has faculty role
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('User not found');
+      // Verify session exists before navigating
+      // This ensures the auth state is fully synchronized
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+      if (sessionError || !session) {
+        console.error('[Faculty Login] Session verification failed:', sessionError);
+        setError('Login succeeded but session not established. Please try again.');
+        setLoading(false);
+        return;
       }
 
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single();
+      console.log('[Faculty Login] Session verified, redirecting to faculty dashboard');
 
-      if (profileError) {
-        throw profileError;
-      }
-
-      if (profileData.role !== 'faculty' && profileData.role !== 'admin') {
-        // Sign out the user if they're not faculty
-        await supabase.auth.signOut();
-        throw new Error('Access denied. Faculty login only.');
-      }
-
-      // Redirect to faculty dashboard
+      // Refresh to ensure middleware sees the new session
+      router.refresh();
       router.push('/faculty/dashboard');
     } catch (err: any) {
-      console.error('Login error:', err);
-      setError(err.message || 'Failed to login');
-    } finally {
+      console.error('[Faculty Login] Error:', err);
+      setError(err.message || 'An error occurred during login');
       setLoading(false);
     }
   };
