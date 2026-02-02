@@ -1,9 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '../../../lib/supabase/client'
+import { getSupabaseClient } from '../../../lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+
+// Use singleton client for consistent auth state
+const supabase = getSupabaseClient()
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -11,23 +14,44 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
-  const supabase = createClient()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    try {
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
-    if (error) {
-      setError(error.message)
-      setLoading(false)
-    } else {
+      if (signInError) {
+        setError(signInError.message)
+        setLoading(false)
+        return
+      }
+
+      // Verify session exists before navigating
+      // This ensures the auth state is fully synchronized
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+
+      if (sessionError || !session) {
+        console.error('[Login] Session verification failed:', sessionError)
+        setError('Login succeeded but session not established. Please try again.')
+        setLoading(false)
+        return
+      }
+
+      console.log('[Login] Session verified, redirecting to dashboard')
+
+      // Refresh to ensure middleware sees the new session
+      router.refresh()
       router.push('/dashboard')
+    } catch (err: any) {
+      console.error('[Login] Error:', err)
+      setError(err.message || 'An error occurred during login')
+      setLoading(false)
     }
   }
 

@@ -7,6 +7,14 @@ const nextConfig = {
   swcMinify: true,
   compress: true,
   poweredByHeader: false,
+  // Ensure dynamic routes work properly
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb'
+    }
+  },
+  // Output standalone for better deployment compatibility
+  output: 'standalone',
 };
 
 module.exports = nextConfig;
