@@ -13,7 +13,8 @@ import {
   Shield,
   MapPin,
   Clock,
-  Link
+  Link,
+  FileText
 } from 'lucide-react';
 
 interface ActivityItem {
@@ -133,8 +134,23 @@ export function ActivityTimeline() {
         .order('created_at', { ascending: false })
         .limit(20);
 
-      if (verificationError) {
-        console.error('Error fetching verification logs:', verificationError);
+      // Fetch document uploads - filter by current user
+      const { data: documentUploads, error: documentsError } = await supabase
+        .from('documents')
+        .select(`
+          id,
+          title,
+          user_id,
+          created_at,
+          updated_at,
+          category
+        `)
+        .eq('user_id', user.id) // Filter by current user
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (documentsError) {
+        console.error('Error fetching document uploads:', documentsError);
       }
 
       // Transform and combine data
@@ -154,6 +170,24 @@ export function ActivityTimeline() {
             accessedAt: log.accessed_at,
             metadata: {
               userAgent: log.user_agent
+            }
+          });
+        });
+      }
+
+      // Process document uploads
+      if (documentUploads) {
+        documentUploads.forEach((doc: any) => {
+          transformedActivities.push({
+            id: `upload-${doc.id}`,
+            action: 'upload',
+            documentName: doc.title || 'Unknown Document',
+            documentId: doc.id,
+            accessedBy: doc.user_id,
+            accessedAt: doc.created_at,
+            metadata: {
+              category: doc.category,
+              updated_at: doc.updated_at
             }
           });
         });
@@ -200,7 +234,7 @@ export function ActivityTimeline() {
     // Initial fetch
     fetchActivities();
 
-    // Set up real-time subscriptions - filter by current user
+    // Set up real-time subscriptions - refresh on any change to these tables
     const accessLogsSubscription = supabase
       .channel('access_logs_changes')
       .on('postgres_changes', 
@@ -211,10 +245,8 @@ export function ActivityTimeline() {
         }, 
         (payload: any) => {
           console.log('Access log change detected:', payload);
-          // Only refresh if it's the current user's activity
-          if (payload.new?.accessed_by === user.id || payload.old?.accessed_by === user.id) {
-            fetchActivities();
-          }
+          // Always refresh - the query will filter by user ID
+          fetchActivities();
         }
       )
       .subscribe();
@@ -229,10 +261,8 @@ export function ActivityTimeline() {
         },
         (payload: any) => {
           console.log('Verification change detected:', payload);
-          // Only refresh if it's the current user's verification
-          if (payload.new?.user_id === user.id || payload.old?.user_id === user.id) {
-            fetchActivities();
-          }
+          // Always refresh - the query will filter by user ID
+          fetchActivities();
         }
       )
       .subscribe();
@@ -247,11 +277,8 @@ export function ActivityTimeline() {
         },
         (payload: any) => {
           console.log('Document change detected:', payload);
-          // Only refresh if it's the current user's document
-          if (payload.new?.user_id === user.id || payload.old?.user_id === user.id) {
-            // Small delay to ensure related tables are updated
-            setTimeout(fetchActivities, 500);
-          }
+          // Always refresh - the query will filter by user ID
+          setTimeout(fetchActivities, 500);
         }
       )
       .subscribe();
@@ -362,6 +389,12 @@ export function ActivityTimeline() {
                     </h4>
                     
                     <div className="flex items-center gap-4 text-sm text-gray-400">
+                      {activity.metadata?.category && (
+                        <span className="px-2 py-0.5 rounded text-xs bg-gray-500/20 text-gray-400">
+                          {activity.metadata.category}
+                        </span>
+                      )}
+                      
                       {activity.metadata?.verifierName && (
                         <span>By {activity.metadata.verifierName}</span>
                       )}

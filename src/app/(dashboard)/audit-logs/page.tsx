@@ -90,7 +90,7 @@ export default function AuditLogsPage() {
     
     fetchStats();
 
-    // Set up real-time subscriptions for stats updates - filter by current user
+    // Set up real-time subscriptions for stats updates - refresh on any change
     const accessLogsSubscription = supabase
       .channel('stats_access_logs')
       .on('postgres_changes', 
@@ -100,10 +100,9 @@ export default function AuditLogsPage() {
           table: 'access_logs' 
         }, 
         (payload: any) => {
-          // Only refresh if it's the current user's activity
-          if (payload.new?.accessed_by === user.id || payload.old?.accessed_by === user.id) {
-            fetchStats();
-          }
+          console.log('Stats: Access log change detected:', payload);
+          // Always refresh - the query will filter by user ID
+          fetchStats();
         }
       )
       .subscribe();
@@ -117,10 +116,9 @@ export default function AuditLogsPage() {
           table: 'verifications'
         },
         (payload: any) => {
-          // Only refresh if it's the current user's verification
-          if (payload.new?.user_id === user.id || payload.old?.user_id === user.id) {
-            fetchStats();
-          }
+          console.log('Stats: Verification change detected:', payload);
+          // Always refresh - the query will filter by user ID
+          fetchStats();
         }
       )
       .subscribe();
@@ -134,10 +132,9 @@ export default function AuditLogsPage() {
           table: 'documents'
         },
         (payload: any) => {
-          // Only refresh if it's the current user's document
-          if (payload.new?.user_id === user.id || payload.old?.user_id === user.id) {
-            fetchStats();
-          }
+          console.log('Stats: Document change detected:', payload);
+          // Always refresh - the query will filter by user ID
+          fetchStats();
         }
       )
       .subscribe();
