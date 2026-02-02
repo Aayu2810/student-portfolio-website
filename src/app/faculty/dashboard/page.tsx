@@ -5,9 +5,10 @@ import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { FileText, Download, CheckCircle, XCircle, Calendar, User } from 'lucide-react'
+import { FileText, Download, CheckCircle, XCircle, Calendar, User, LogOut } from 'lucide-react'
 import { VerifyModal } from '@/components/verification/VerifyModal'
 import { getUserInfo, formatUserInfo } from '@/lib/userUtils'
+import { useRouter } from 'next/navigation'
 
 interface VerificationRequest {
   id: string;
@@ -30,10 +31,22 @@ export default function FacultyDashboard() {
   const [selectedDocument, setSelectedDocument] = useState<VerificationRequest | null>(null);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const supabase = createClient();
+  const router = useRouter();
 
   useEffect(() => {
     fetchVerificationRequests();
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      router.push('/(auth)/faculty-login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Fallback: force redirect even if signOut fails
+      window.location.href = '/(auth)/faculty-login';
+    }
+  };
 
   const handleDownload = async (document: VerificationRequest) => {
     try {
@@ -247,8 +260,20 @@ export default function FacultyDashboard() {
     <div className="min-h-screen bg-gray-900 text-white p-8">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">Verification Requests</h1>
-          <p className="text-gray-400">Review and verify student documents</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl font-bold text-white mb-2">Verification Requests</h1>
+              <p className="text-gray-400">Review and verify student documents</p>
+            </div>
+            <Button
+              onClick={handleLogout}
+              variant="outline"
+              className="border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Logout
+            </Button>
+          </div>
         </div>
 
         {requests.length === 0 ? (
