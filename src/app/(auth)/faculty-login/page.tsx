@@ -2,10 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSupabaseClient } from '@/lib/supabase/client';
-
-// Use singleton client for consistent auth state
-const supabase = getSupabaseClient();
+import { createClient } from '@/lib/supabase/client';
 
 export default function FacultyLoginPage() {
   const [email, setEmail] = useState('');
@@ -20,36 +17,45 @@ export default function FacultyLoginPage() {
     setError(null);
 
     try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const supabase = createClient();
+
+      const { error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (signInError) {
-        setError(signInError.message);
-        setLoading(false);
-        return;
+      if (authError) {
+        throw authError;
       }
 
-      // Verify session exists before navigating
-      // This ensures the auth state is fully synchronized
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-      if (sessionError || !session) {
-        console.error('[Faculty Login] Session verification failed:', sessionError);
-        setError('Login succeeded but session not established. Please try again.');
-        setLoading(false);
-        return;
+      // Check if user has faculty role
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not found');
       }
 
-      console.log('[Faculty Login] Session verified, redirecting to faculty dashboard');
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
 
-      // Refresh to ensure middleware sees the new session
-      router.refresh();
+      if (profileError) {
+        throw profileError;
+      }
+
+      if (profileData.role !== 'faculty' && profileData.role !== 'admin') {
+        // Sign out the user if they're not faculty
+        await supabase.auth.signOut();
+        throw new Error('Access denied. Faculty login only.');
+      }
+
+      // Redirect to faculty dashboard
       router.push('/faculty/dashboard');
     } catch (err: any) {
-      console.error('[Faculty Login] Error:', err);
-      setError(err.message || 'An error occurred during login');
+      console.error('Login error:', err);
+      setError(err.message || 'Failed to login');
+    } finally {
       setLoading(false);
     }
   };

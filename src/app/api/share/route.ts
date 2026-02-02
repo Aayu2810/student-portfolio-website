@@ -32,29 +32,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Maximum 10 documents can be shared at once' }, { status: 400 })
     }
 
-    // Validate expiration hours if provided
-    if (expires_in_hours !== undefined && expires_in_hours !== null) {
-      if (typeof expires_in_hours !== 'number' || expires_in_hours <= 0) {
-        return NextResponse.json({ 
-          error: 'Expiration hours must be a positive number' 
-        }, { status: 400 })
-      }
-      if (expires_in_hours > 8760) { // Max 1 year
-        return NextResponse.json({ 
-          error: 'Expiration cannot exceed 1 year (8760 hours)' 
-        }, { status: 400 })
-      }
-    }
-
-    // Validate max_access if provided
-    if (max_access !== undefined && max_access !== null) {
-      if (typeof max_access !== 'number' || max_access <= 0) {
-        return NextResponse.json({ 
-          error: 'Max access must be a positive number' 
-        }, { status: 400 })
-      }
-    }
-
     // Verify user owns all documents
     const { data: documents, error: docError } = await supabase
       .from('documents')

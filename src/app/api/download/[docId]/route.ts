@@ -94,16 +94,15 @@ async function addRVCELogoToPDF(pdfBuffer: ArrayBuffer): Promise<ArrayBuffer> {
   }
 }
 
-export async function GET(request: Request, { params }: { params: Promise<{ docId: string }> }) {
+export async function GET(request: Request, { params }: { params: { docId: string } }) {
   try {
-    const { docId } = await params
     const supabase = await createClient();
     
     // Fetch document details with verification status
     const { data: document, error: docError } = await supabase
       .from('documents')
       .select('id, title, category, created_at, is_public, file_url, storage_path, file_name, file_type')
-      .eq('id', docId)
+      .eq('id', params.docId)
       .single();
 
     if (docError) {

@@ -12,10 +12,10 @@ import Link from 'next/link'
 export default function VerificationPage() {
   const { documents, loading, error } = useVerification()
   const [userRole, setUserRole] = useState<string>('')
-  const supabase = createClient()
 
   useEffect(() => {
     const fetchUserRole = async () => {
+      const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       
       if (user) {
@@ -30,8 +30,7 @@ export default function VerificationPage() {
     }
 
     fetchUserRole()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // Only run once on mount
+  }, [])
 
   if (loading) {
     return (
