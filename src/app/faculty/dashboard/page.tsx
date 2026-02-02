@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { FileText, Download, CheckCircle, XCircle, Calendar, User } from 'lucide-react'
 import { VerifyModal } from '@/components/verification/VerifyModal'
+import { getUserInfo, formatUserInfo } from '@/lib/userUtils'
 
 interface VerificationRequest {
   id: string;
@@ -180,34 +181,9 @@ export default function FacultyDashboard() {
 
       if (error) throw error;
 
-      // Get user info from auth.users since profiles table is empty
+      // Get user info using utility function
       const userIds = data?.map(doc => doc.user_id) || [];
-      let userMap = new Map();
-      
-      // Try to get user info from auth.users directly
-      if (userIds.length > 0) {
-        try {
-          const { data: authUsers, error: authError } = await supabase
-            .from('auth.users')
-            .select('id, email, raw_user_meta_data')
-            .in('id', userIds);
-          
-          if (!authError && authUsers) {
-            userMap = new Map(
-              authUsers.map(user => [
-                user.id,
-                {
-                  email: user.email,
-                  first_name: user.raw_user_meta_data?.first_name || user.email?.split('@')[0] || 'Unknown',
-                  last_name: user.raw_user_meta_data?.last_name || ''
-                }
-              ])
-            );
-          }
-        } catch (authError) {
-          console.log('Could not access auth.users, using fallback');
-        }
-      }
+      const userMap = await getUserInfo(userIds);
 
       // Debug: Log the actual data structure
       console.log('Faculty dashboard raw data:', data?.[0]);
@@ -230,12 +206,7 @@ export default function FacultyDashboard() {
 
       const transformedRequests: VerificationRequest[] = data?.map(doc => {
         const userInfo = userMap.get(doc.user_id);
-        console.log('User info for document:', doc.user_id, userInfo);
-        
-        // Fallback to user ID if no profile info available
-        const displayName = userInfo?.first_name && userInfo?.last_name 
-          ? `${userInfo.first_name} ${userInfo.last_name}`.trim()
-          : userInfo?.first_name || `User ${doc.user_id.slice(0, 8)}`;
+        const { displayName, displayEmail } = formatUserInfo(userInfo, doc.user_id);
         
         return {
           id: doc.id,
@@ -245,7 +216,7 @@ export default function FacultyDashboard() {
           document_url: doc.file_url,
           document_storage_path: doc.storage_path,
           user_id: doc.user_id,
-          user_email: userInfo?.email || 'user@example.com',
+          user_email: displayEmail,
           user_name: displayName,
           status: doc.is_public ? 'approved' : (rejectedDocIds.has(doc.id) ? 'rejected' : 'pending'),
           created_at: doc.created_at,

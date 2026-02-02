@@ -5,6 +5,8 @@ import { ThemeSelector } from './ThemeSelector';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import PortfolioShareModal from './PortfolioShareModal';
+import { Share2 } from 'lucide-react';
 
 interface PortfolioData {
   title: string;
@@ -33,9 +35,11 @@ export function PortfolioEditor({ initialData, onSave }: PortfolioEditorProps) {
   );
   
   const [newSkill, setNewSkill] = useState('');
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const handleSave = () => {
     onSave(data);
+    alert('Portfolio saved successfully!');
   };
 
   const addSkill = () => {
@@ -165,31 +169,18 @@ export function PortfolioEditor({ initialData, onSave }: PortfolioEditorProps) {
           </div>
 
           <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-xl p-6">
-            <h3 className="text-xl font-semibold text-white mb-4">Publish Settings</h3>
+            <h3 className="text-xl font-semibold text-white mb-4">Share Portfolio</h3>
             
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
-                <div>
-                  <h4 className="font-medium text-white">Portfolio Visibility</h4>
-                  <p className="text-sm text-gray-400">Make your portfolio publicly accessible</p>
-                </div>
-                <div className="relative inline-block w-12 h-6">
-                  <input type="checkbox" className="sr-only" />
-                  <div className="block w-12 h-6 rounded-full bg-gray-700"></div>
-                  <div className="absolute left-1 top-1 bg-gray-400 w-4 h-4 rounded-full transition transform"></div>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
-                <div>
-                  <h4 className="font-medium text-white">QR Code Sharing</h4>
-                  <p className="text-sm text-gray-400">Generate QR code for easy sharing</p>
-                </div>
-                <div className="relative inline-block w-12 h-6">
-                  <input type="checkbox" className="sr-only" defaultChecked />
-                  <div className="block w-12 h-6 rounded-full bg-purple-600"></div>
-                  <div className="absolute left-7 top-1 bg-white w-4 h-4 rounded-full transition transform"></div>
-                </div>
+              <div className="p-4 bg-gray-800/50 rounded-lg">
+                <p className="text-gray-300 mb-4">Share your professional portfolio with others via link or QR code.</p>
+                <button
+                  onClick={() => setShowShareModal(true)}
+                  className="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  <Share2 className="w-4 h-4" />
+                  Open Share Settings
+                </button>
               </div>
             </div>
             
@@ -198,12 +189,16 @@ export function PortfolioEditor({ initialData, onSave }: PortfolioEditorProps) {
                 onClick={handleSave}
                 className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 py-3"
               >
-                Save & Publish Portfolio
+                Save Portfolio
               </Button>
             </div>
           </div>
         </div>
       </div>
+      
+      {showShareModal && (
+        <PortfolioShareModal onClose={() => setShowShareModal(false)} />
+      )}
     </div>
   );
 }

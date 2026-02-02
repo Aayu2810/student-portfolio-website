@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PortfolioEditor } from '@/components/portfolio/PortfolioEditor';
 import { PortfolioPreview } from '@/components/portfolio/PortfolioPreview';
 import { Button } from '@/components/ui/button';
@@ -28,7 +28,6 @@ export default function PortfolioPage() {
 
   const handleSave = (data: PortfolioData) => {
     setPortfolioData(data);
-    alert('Portfolio saved successfully!');
   };
 
   return (
