@@ -6,14 +6,14 @@ import { AttestedModal } from '../../../components/AttestedModal'
 import { useDocuments } from '../../../hooks/useDocuments'
 import { useDashboardStats } from '../../../hooks/useDashboardStats'
 import { useUser } from '../../../hooks/useUser'
-import { getSupabaseClient } from '../../../lib/supabase/client'
+import { createClient } from '../../../lib/supabase/client'
 import Link from 'next/link'
 
 export default function DashboardPage() {
-  const { documents, loading: docsLoading } = useDocuments()
+  const { documents, loading } = useDocuments()
   const { stats: dashboardStats, loading: statsLoading } = useDashboardStats()
-  const { user, profile, loading: userLoading, error: userError, initialized } = useUser()
-  const supabase = getSupabaseClient()
+  const { user, profile } = useUser()
+  const supabase = createClient()
   const [showShareModal, setShowShareModal] = useState(false)
   const [shareLink, setShareLink] = useState('')
   const [expiresIn, setExpiresIn] = useState('24')
@@ -22,43 +22,24 @@ export default function DashboardPage() {
   const [showAttestedModal, setShowAttestedModal] = useState(false)
   const [selectedDocument, setSelectedDocument] = useState<any>(null)
 
-  // Loading state based on proper initialization, not timeouts
-  const loading = !initialized || userLoading
-
   // Memoize expensive callback
   const generateShareLink = useCallback(async () => {
-    if (!user || !documents || documents.length === 0) return;
+    if (!user) return;
     
     try {
-      // Get all document IDs (limit to 10 as per API constraint)
-      const documentIds = documents.slice(0, 10).map(doc => doc.id);
+      // Generate a temporary share link for the user's documents
+      const tempShareCode = Math.random().toString(36).substring(2, 10);
+      const generatedLink = `https://student-portfolio-website-seven.vercel.app/shared/${tempShareCode}`;
       
-      // Call the real share API
-      const response = await fetch('/api/share', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          document_ids: documentIds,
-          expires_in_hours: parseInt(expiresIn) || 24,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create share link');
-      }
-
-      const data = await response.json();
-      setShareLink(data.share_url);
+      setShareLink(generatedLink);
       
       // Generate QR code
-      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(data.share_url)}`;
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(generatedLink)}`;
       setQrDataUrl(qrUrl);
     } catch (error) {
       console.error('Error generating share link:', error);
-      alert('Failed to generate share link. Please try again.');
     }
-  }, [user, documents, expiresIn]);
+  }, [user]);
 
   const viewAttestedDocument = useCallback(async (doc: any) => {
     setSelectedDocument(doc);
@@ -110,47 +91,12 @@ export default function DashboardPage() {
 
   ], [dashboardStats, statsLoading, generateShareLink, setShowShareModal]);
 
-  const recentDocs = useMemo(() => (documents || []).slice(0, 5), [documents]);
-
-  // Show error state if auth failed
-  if (userError) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center max-w-md mx-auto p-8">
-          <div className="text-red-500 text-6xl mb-4">⚠️</div>
-          <h2 className="text-white text-2xl font-bold mb-4">Authentication Error</h2>
-          <p className="text-gray-400 mb-6">
-            {userError}
-          </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
-          >
-            Refresh Page
-          </button>
-        </div>
-      </div>
-    )
-  }
+  const recentDocs = useMemo(() => documents.slice(0, 5), [documents]);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
-          <div className="text-white text-lg">Loading your dashboard...</div>
-        </div>
-      </div>
-    )
-  }
-
-  // Safety check - if user not loaded yet after loading is done, something's wrong
-  if (!user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="text-white text-lg">Please log in to view your dashboard</div>
-        </div>
+        <div className="text-white">Loading...</div>
       </div>
     )
   }
@@ -248,11 +194,7 @@ export default function DashboardPage() {
                         )}
                         {doc.is_public && (
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              e.preventDefault();
-                              viewAttestedDocument(doc);
-                            }}
+                            onClick={() => viewAttestedDocument(doc)}
                             className="flex items-center gap-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-lg transition-colors"
                           >
                             <Check className="w-3 h-3" />

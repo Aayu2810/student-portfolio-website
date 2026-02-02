@@ -1,9 +1,8 @@
 import { createClient } from '../../../../lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
-export async function POST(request: Request, { params }: { params: Promise<{ docId: string }> }) {
+export async function POST(request: Request, { params }: { params: { docId: string } }) {
   try {
-    const { docId } = await params
     const supabase = await createClient()
     
     // Get current user
@@ -25,13 +24,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ doc
     }
 
     const { action, reason } = await request.json()
-    console.log('Simple verify API:', { docId, action, reason })
+    console.log('Simple verify API:', { docId: params.docId, action, reason })
 
     // Get document
     const { data: document, error: docError } = await supabase
       .from('documents')
       .select('*')
-      .eq('id', docId)
+      .eq('id', params.docId)
       .single()
 
     if (docError || !document) {
@@ -46,7 +45,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ doc
           is_public: true,
           updated_at: new Date().toISOString()
         })
-        .eq('id', docId)
+        .eq('id', params.docId)
 
       if (updateError) {
         console.error('Update error:', updateError)
@@ -120,7 +119,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ doc
           is_public: false,
           updated_at: new Date().toISOString()
         })
-        .eq('id', docId)
+        .eq('id', params.docId)
 
       if (updateError) {
         console.error('Update error:', updateError)
@@ -157,7 +156,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ doc
         await supabase
           .from('document_rejections')
           .upsert({
-            document_id: docId,
+            document_id: params.docId,
             rejected_by: user.id,
             rejection_reason: reason,
             rejected_at: new Date().toISOString()

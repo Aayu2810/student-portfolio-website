@@ -1,5 +1,5 @@
 // Simple Verification Hook - No Complex Real-time, Fast Loading
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '../lib/supabase/client';
 import { useUser } from './useUser';
 
@@ -25,7 +25,7 @@ export function useVerification() {
   const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
 
-  // Fetch initial data - only runs when user or profile changes
+  // Fetch initial data
   useEffect(() => {
     const fetchVerificationDocuments = async () => {
       if (!user || !profile) {
@@ -60,7 +60,7 @@ export function useVerification() {
             `)
             .order('created_at', { ascending: false });
         } else {
-          // Student: fetch only their documents (we'll filter to show only rejected or pending verification ones)
+          // Student: fetch only their documents
           query = supabase
             .from('documents')
             .select(`
@@ -93,7 +93,7 @@ export function useVerification() {
           const { data: rejections } = await supabase
             .from('document_rejections')
             .select('document_id, rejection_reason')
-            .in('document_id', data?.map(doc => doc.id) || []);
+            .eq('document_id', data?.map(doc => doc.id) || []);
           
           rejectedDocIds = new Set(rejections?.map((r: any) => r.document_id) || []);
           rejectionData = rejections || [];
@@ -129,17 +129,7 @@ export function useVerification() {
           };
         }) || [];
 
-        // For students: only show documents that have been rejected or are truly pending verification
-        // Exclude private documents that haven't been submitted for verification
-        const filteredData = profile?.role === 'faculty' || profile?.role === 'admin'
-          ? transformedData
-          : transformedData.filter(doc => 
-              doc.status === 'rejected' || 
-              doc.status === 'verified' ||
-              (doc.status === 'pending' && rejectedDocIds.has(doc.id))
-            );
-
-        setDocuments(filteredData);
+        setDocuments(transformedData);
       } catch (err: any) {
         console.error('Error fetching verification documents:', err);
         setError(err.message);
@@ -151,12 +141,11 @@ export function useVerification() {
     fetchVerificationDocuments();
   }, [user, profile]);
 
-  const refetch = useCallback(() => {
+  const refetch = () => {
     // Simple refetch function
-    if (!user || !profile) return;
-    
-    setLoading(true);
-    const fetchVerificationDocuments = async () => {
+    if (user && profile) {
+      setLoading(true);
+      const fetchVerificationDocuments = async () => {
         try {
           setError(null);
 
@@ -234,7 +223,51 @@ export function useVerification() {
       };
 
       fetchVerificationDocuments();
-  }, [user, profile]);
+    }
+  };
+
+  // Set up real-time subscription for document updates
+  useEffect(() => {
+    if (!user || !profile) return;
+    
+    const supabase = createClient();
+    
+    // Subscribe to document changes
+    const subscription = supabase
+      .channel('document-changes-student')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'documents',
+          filter: profile.role === 'faculty' || profile.role === 'admin' 
+            ? undefined 
+            : `user_id=eq.${user.id}`
+        }, 
+        (payload) => {
+          console.log('Student dashboard - Document change detected:', payload);
+          // Refresh the documents when changes occur
+          refetch();
+        }
+      )
+      .on('postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'document_rejections'
+        },
+        (payload) => {
+          console.log('Student dashboard - Rejection change detected:', payload);
+          // Refresh the documents when rejections change
+          refetch();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [user, profile, refetch]);
 
   return {
     documents,

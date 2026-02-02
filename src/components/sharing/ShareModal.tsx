@@ -34,13 +34,13 @@ export function ShareModal({
   documentName,
   documentId,
 }: ShareModalProps) {
-  const [shareLink, setShareLink] = useState("");
+  const [shareLink, setShareLink] = useState(
+    `https://campuscred.com/shared/${documentId}`
+  );
   const [copied, setCopied] = useState(false);
   const [email, setEmail] = useState("");
   const [expiryDays, setExpiryDays] = useState("7");
   const [isPublic, setIsPublic] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(shareLink);
@@ -55,36 +55,10 @@ export function ShareModal({
     setEmail("");
   };
 
-  const handleGenerateNewLink = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // Handle 'never' expiry option
-      const expiresInHours = expiryDays === 'never' ? null : parseInt(expiryDays) * 24;
-      
-      const response = await fetch('/api/share', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          document_ids: [documentId],
-          expires_in_hours: expiresInHours,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create share link');
-      }
-
-      const data = await response.json();
-      setShareLink(data.share_url);
-      alert('Share link generated successfully!');
-    } catch (err: any) {
-      setError(err.message);
-      console.error('Error generating share link:', err);
-    } finally {
-      setLoading(false);
-    }
+  const handleGenerateNewLink = () => {
+    const newLink = `https://campuscred.com/shared/${documentId}-${Date.now()}`;
+    setShareLink(newLink);
+    alert("New share link generated!");
   };
 
   return (
@@ -101,13 +75,6 @@ export function ShareModal({
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Error Message */}
-          {error && (
-            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-              <p className="text-red-400 text-sm">{error}</p>
-            </div>
-          )}
-
           {/* Share Link */}
           <div className="space-y-2">
             <Label className="text-white flex items-center gap-2">
@@ -122,13 +89,12 @@ export function ShareModal({
               />
               <Button
                 onClick={handleCopyLink}
-                disabled={!shareLink || loading}
                 size="icon"
                 className={`${
                   copied
                     ? "bg-green-600 hover:bg-green-700"
                     : "bg-purple-600 hover:bg-purple-700"
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                }`}
               >
                 {copied ? (
                   <Check className="w-4 h-4" />
@@ -184,12 +150,11 @@ export function ShareModal({
           {/* Generate New Link */}
           <Button
             onClick={handleGenerateNewLink}
-            disabled={loading}
             variant="outline"
             size="sm"
-            className="w-full border-white/10 hover:bg-purple-400/20 disabled:opacity-50"
+            className="w-full border-white/10 hover:bg-purple-400/20"
           >
-            {loading ? 'Generating...' : 'Generate New Link'}
+            Generate New Link
           </Button>
 
           {/* Email Share */}

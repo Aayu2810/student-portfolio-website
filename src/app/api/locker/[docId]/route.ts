@@ -3,9 +3,8 @@
 import { createClient } from '../../../../lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ docId: string }> }) {
+export async function GET(request: NextRequest, { params }: { params: { docId: string } }) {
   try {
-    const { docId } = await params
     const supabase = await createClient()
     
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -18,7 +17,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const { data: document, error } = await supabase
       .from('documents')
       .select('*')
-      .eq('id', docId)
+      .eq('id', params.docId)
       .eq('user_id', user.id)
       .single()
 
@@ -35,7 +34,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     await supabase
       .from('documents')
       .update({ views: (document.views || 0) + 1 })
-      .eq('id', docId)
+      .eq('id', params.docId)
 
     return NextResponse.json({ document })
   } catch (error) {
@@ -44,9 +43,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ docId: string }> }) {
+export async function DELETE(request: NextRequest, { params }: { params: { docId: string } }) {
   try {
-    const { docId } = await params
     const supabase = await createClient()
     
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -58,8 +56,8 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     // Fetch the document to get its storage path
     const { data: document, error: fetchError } = await supabase
       .from('documents')
-      .select('storage_path, file_size')
-      .eq('id', docId)
+      .select('storage_path')
+      .eq('id', params.docId)
       .eq('user_id', user.id)
       .single()
 
@@ -75,9 +73,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
       if (storageError) {
         console.error('Error deleting file from storage:', storageError)
-        return NextResponse.json({ 
-          error: 'Failed to delete file from storage. Please try again.' 
-        }, { status: 500 })
+        // Continue with database deletion even if storage deletion fails
       }
     }
 
@@ -85,25 +81,12 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const { error: dbError } = await supabase
       .from('documents')
       .delete()
-      .eq('id', docId)
+      .eq('id', params.docId)
       .eq('user_id', user.id)
 
     if (dbError) {
       console.error('Error deleting document from database:', dbError)
       return NextResponse.json({ error: dbError.message }, { status: 500 })
-    }
-
-    // Update storage usage - decrement the file size
-    if (document.file_size) {
-      const { error: storageUpdateError } = await supabase.rpc('decrement_storage', { 
-        user_id_param: user.id, 
-        bytes: document.file_size 
-      })
-      
-      if (storageUpdateError) {
-        console.error('Error updating storage:', storageUpdateError)
-        // Non-critical, continue anyway
-      }
     }
 
     return NextResponse.json({ success: true })
@@ -113,9 +96,8 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   }
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: Promise<{ docId: string }> }) {
+export async function PATCH(request: NextRequest, { params }: { params: { docId: string } }) {
   try {
-    const { docId } = await params
     const supabase = await createClient()
     
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -126,21 +108,19 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const data = await request.json()
 
-    // Update the document in the database and return the updated document
-    const { data: document, error } = await supabase
+    // Update the document in the database
+    const { error } = await supabase
       .from('documents')
       .update(data)
-      .eq('id', docId)
+      .eq('id', params.docId)
       .eq('user_id', user.id)
-      .select()
-      .single()
 
     if (error) {
       console.error('Error updating document:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, document })
+    return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error updating document:', error)
     return NextResponse.json({ error: 'Failed to update document' }, { status: 500 })

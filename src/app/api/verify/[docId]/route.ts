@@ -200,9 +200,8 @@ async function addRVCELogoToDocument(docId: string, documentUrl: string, supabas
   }
 }
 
-export async function GET(request: Request, { params }: { params: Promise<{ docId: string }> }) {
+export async function GET(request: Request, { params }: { params: { docId: string } }) {
   try {
-    const { docId } = await params
     const supabase = await createClient();
     
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -224,7 +223,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ docI
         user_id,
         profiles(first_name, last_name, email)
       `)
-      .eq('id', docId)
+      .eq('id', params.docId)
       .single();
 
     if (docError) {
@@ -250,7 +249,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ docI
     const { data: verificationRecord, error: verifError } = await supabase
       .from('verifications')
       .select('id')
-      .eq('document_id', docId)
+      .eq('document_id', params.docId)
       .single();
     
     let verificationHistory: VerificationHistory[] = [];
@@ -302,9 +301,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ docI
   }
 }
 
-export async function POST(request: Request, { params }: { params: Promise<{ docId: string }> }) {
+export async function POST(request: Request, { params }: { params: { docId: string } }) {
   try {
-    const { docId } = await params
     const supabase = await createClient();
     
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -332,7 +330,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ doc
       const { data: document, error: docError } = await supabase
         .from('documents')
         .select('file_url, storage_path, file_name, file_type, title, user_id')
-        .eq('id', docId)
+        .eq('id', params.docId)
         .single();
 
       if (docError) {
@@ -341,7 +339,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ doc
       }
 
       // Add RVCE logo to the document (this is where the actual logo overlay would happen)
-      const processedResult = await addRVCELogoToDocument(docId, document.file_url, supabase, document.storage_path, document.file_type, document.file_name);
+      const processedResult = await addRVCELogoToDocument(params.docId, document.file_url, supabase, document.storage_path, document.file_type, document.file_name);
       const processedUrl = processedResult.publicUrl;
       const newStoragePath = processedResult.storagePath;
 
@@ -354,7 +352,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ doc
           file_url: processedUrl, // Update URL if the document was processed
           storage_path: newStoragePath // Update storage path as well
         })
-        .eq('id', docId);
+        .eq('id', params.docId);
       
       if (docUpdateError) {
         console.error('Error updating document verification status:', docUpdateError);
@@ -365,7 +363,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ doc
       const { data: existingVerification, error: fetchError } = await supabase
         .from('verifications')
         .select('id')
-        .eq('document_id', docId)
+        .eq('document_id', params.docId)
         .single();
       
       let verificationResult;
@@ -374,7 +372,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ doc
         verificationResult = await supabase
           .from('verifications')
           .insert({
-            document_id: docId,
+            document_id: params.docId,
             verifier_id: user.id,
             status: 'approved',
             updated_at: new Date().toISOString()
@@ -400,7 +398,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ doc
       const logResult = await supabase
         .from('verification_logs')
         .insert({
-          verification_id: docId,
+          verification_id: params.docId,
           action: 'verified',
           performer_id: user.id,
           performer_role: profileData?.role,
@@ -429,7 +427,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ doc
           user_id: user.id,
           action: 'approve',
           resource_type: 'document',
-          resource_id: docId,
+          resource_id: params.docId,
           details: {
             document_title: document.title,
             document_owner_id: document.user_id,
@@ -454,7 +452,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ doc
       const { data: document, error: docError } = await supabase
         .from('documents')
         .select('title, user_id, file_url')
-        .eq('id', docId)
+        .eq('id', params.docId)
         .single();
 
       if (docError) {
@@ -469,7 +467,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ doc
           is_public: false,
           updated_at: new Date().toISOString()
         })
-        .eq('id', docId);
+        .eq('id', params.docId);
 
       if (docUpdateError) {
         console.error('Error updating document verification status:', docUpdateError);
@@ -480,7 +478,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ doc
       const { data: existingVerification, error: fetchError } = await supabase
         .from('verifications')
         .select('id')
-        .eq('document_id', docId)
+        .eq('document_id', params.docId)
         .single();
       
       let verificationResult;
@@ -489,7 +487,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ doc
         verificationResult = await supabase
           .from('verifications')
           .insert({
-            document_id: docId,
+            document_id: params.docId,
             verifier_id: user.id,
             status: 'rejected',
             rejection_reason: reason,
@@ -527,7 +525,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ doc
       const logResult = await supabase
         .from('verification_logs')
         .insert({
-          verification_id: docId,
+          verification_id: params.docId,
           action: 'rejected',
           performer_id: user.id,
           performer_role: profileData?.role,
