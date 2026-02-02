@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react'
 import { getSupabaseClient } from '../lib/supabase/client'
 import { Profile } from '../types'
 import { User } from '@supabase/supabase-js'
-import { showNotification } from '../components/notifications/NotificationPopup'
 
 // Use singleton client for consistent auth state
 const supabase = getSupabaseClient()
@@ -94,35 +93,34 @@ export function useUser() {
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log('[useUser] Auth state change:', event, 'User:', session?.user?.email || 'null')
 
         if (!isMounted) return
 
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-          setUser(session?.user ?? null)
+          // IMMEDIATELY set loading state BEFORE any async work
+          // This prevents the race condition where user is set but loading is false
+          setLoading(true)
           setError(null)
 
-          // Show welcome notification ONLY on actual sign in
-          if (event === 'SIGNED_IN' && session?.user) {
-            showNotification({
-              type: 'success',
-              title: 'Welcome Back! 🎉',
-              message: `Successfully signed in as ${session.user.email}`,
-              actionText: 'Get Started'
-            })
-          }
+          // Update user synchronously
+          setUser(session?.user ?? null)
 
-          // Always refetch profile on auth events
+          // Defer profile fetch outside the auth callback to avoid async inside auth event
           if (session?.user) {
-            console.log('[useUser] Refetching profile after', event)
-            const profileData = await fetchProfile(session.user.id)
-            if (isMounted) {
+            const userId = session.user.id
+            console.log('[useUser] Deferring profile refetch after', event)
+            setTimeout(async () => {
+              const profileData = await fetchProfile(userId)
+              if (!isMounted) return
               setProfile(profileData)
+              setInitialized(true)
               setLoading(false)
-            }
+            }, 0)
           } else {
             setProfile(null)
+            setInitialized(true)
             setLoading(false)
           }
         } else if (event === 'SIGNED_OUT') {
