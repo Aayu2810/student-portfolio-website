@@ -250,7 +250,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ docI
     const { data: verificationRecord, error: verifError } = await supabase
       .from('verifications')
       .select('id')
-      .eq('document_id', params.docId)
+      .eq('document_id', docId)
       .single();
     
     let verificationHistory: VerificationHistory[] = [];

@@ -6,14 +6,14 @@ import { AttestedModal } from '../../../components/AttestedModal'
 import { useDocuments } from '../../../hooks/useDocuments'
 import { useDashboardStats } from '../../../hooks/useDashboardStats'
 import { useUser } from '../../../hooks/useUser'
-import { createClient } from '../../../lib/supabase/client'
+import { getSupabaseClient } from '../../../lib/supabase/client'
 import Link from 'next/link'
 
 export default function DashboardPage() {
-  const { documents, loading } = useDocuments()
+  const { documents, loading: docsLoading } = useDocuments()
   const { stats: dashboardStats, loading: statsLoading } = useDashboardStats()
-  const { user, profile } = useUser()
-  const supabase = createClient()
+  const { user, profile, loading: userLoading, error: userError, initialized } = useUser()
+  const supabase = getSupabaseClient()
   const [showShareModal, setShowShareModal] = useState(false)
   const [shareLink, setShareLink] = useState('')
   const [expiresIn, setExpiresIn] = useState('24')
@@ -21,6 +21,9 @@ export default function DashboardPage() {
   const [qrDataUrl, setQrDataUrl] = useState('')
   const [showAttestedModal, setShowAttestedModal] = useState(false)
   const [selectedDocument, setSelectedDocument] = useState<any>(null)
+
+  // Loading state based on proper initialization, not timeouts
+  const loading = !initialized || userLoading
 
   // Memoize expensive callback
   const generateShareLink = useCallback(async () => {
@@ -107,12 +110,47 @@ export default function DashboardPage() {
 
   ], [dashboardStats, statsLoading, generateShareLink, setShowShareModal]);
 
-  const recentDocs = useMemo(() => documents.slice(0, 5), [documents]);
+  const recentDocs = useMemo(() => (documents || []).slice(0, 5), [documents]);
+
+  // Show error state if auth failed
+  if (userError) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center max-w-md mx-auto p-8">
+          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <h2 className="text-white text-2xl font-bold mb-4">Authentication Error</h2>
+          <p className="text-gray-400 mb-6">
+            {userError}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
+          >
+            Refresh Page
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-white">Loading...</div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <div className="text-white text-lg">Loading your dashboard...</div>
+        </div>
+      </div>
+    )
+  }
+
+  // Safety check - if user not loaded yet after loading is done, something's wrong
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="text-white text-lg">Please log in to view your dashboard</div>
+        </div>
       </div>
     )
   }
@@ -210,7 +248,11 @@ export default function DashboardPage() {
                         )}
                         {doc.is_public && (
                           <button
-                            onClick={() => viewAttestedDocument(doc)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              viewAttestedDocument(doc);
+                            }}
                             className="flex items-center gap-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-lg transition-colors"
                           >
                             <Check className="w-3 h-3" />
