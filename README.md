@@ -1,7 +1,5 @@
 # CampusCred - Academic Document Management Platform
 
-![CampusCred Logo](public/images/logo.png)
-
 A secure digital locker platform for academic documents with faculty verification capabilities. Built with Next.js, TypeScript, and Supabase for modern educational institutions.
 
 ## 🎯 What CampusCred Does
