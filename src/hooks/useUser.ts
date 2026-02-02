@@ -10,6 +10,7 @@ export function useUser() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const supabase = createClient()
+  const [hasShownWelcome, setHasShownWelcome] = useState(false)
 
   useEffect(() => {
     let isMounted = true;
@@ -66,17 +67,21 @@ export function useUser() {
           if (isMounted) {
             setUser(session?.user ?? null)
             
-            // Show welcome notification on sign in
-            if (event === 'SIGNED_IN' && session?.user) {
+            // Show welcome notification only on actual sign in, not on tab switch/token refresh
+            if (event === 'SIGNED_IN' && session?.user && !hasShownWelcome) {
               showNotification({
                 type: 'success',
                 title: 'Welcome Back! 🎉',
                 message: `Successfully signed in as ${session.user.email}`,
                 actionText: 'Get Started'
               })
+              setHasShownWelcome(true)
             }
             
             if (session?.user) {
+              // Ensure loading is false when we have a user
+              setLoading(false)
+              
               const { data: profileData, error: profileError } = await supabase
                 .from('profiles')
                 .select('id, email, first_name, last_name, avatar_url, bio, phone, portfolio_url, linkedin_url, github_url, twitter_url, website_url, storage_used, storage_limit, role, created_at, updated_at')
@@ -91,12 +96,15 @@ export function useUser() {
               }
             } else {
               setProfile(null)
+              setLoading(false)
             }
           }
         } else if (event === 'SIGNED_OUT') {
           if (isMounted) {
             setUser(null);
             setProfile(null);
+            setHasShownWelcome(false); // Reset welcome flag for next sign in
+            setLoading(false)
           }
         }
       }

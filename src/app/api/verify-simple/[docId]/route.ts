@@ -52,6 +52,30 @@ export async function POST(request: Request, { params }: { params: { docId: stri
         return NextResponse.json({ error: 'Failed to approve document' }, { status: 500 })
       }
 
+      // Create verification record for audit trail
+      try {
+        const { error: verificationError } = await supabase
+          .from('verifications')
+          .upsert({
+            document_id: params.docId,
+            verifier_id: user.id,
+            status: 'verified',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'document_id'
+          })
+
+        if (verificationError) {
+          console.error('Error creating verification record:', verificationError)
+        } else {
+          console.log('Verification record created for audit trail')
+        }
+      } catch (verificationError) {
+        console.error('Verification table error:', verificationError)
+        // Don't fail the request if verification tracking fails
+      }
+
       // Send notification to document owner
       try {
         const documentTitle = document.title || document.document_title || 'Unknown Document'
@@ -100,6 +124,31 @@ export async function POST(request: Request, { params }: { params: { docId: stri
       if (updateError) {
         console.error('Update error:', updateError)
         return NextResponse.json({ error: 'Failed to reject document' }, { status: 500 })
+      }
+
+      // Create verification record for audit trail
+      try {
+        const { error: verificationError } = await supabase
+          .from('verifications')
+          .upsert({
+            document_id: params.docId,
+            verifier_id: user.id,
+            status: 'rejected',
+            rejection_reason: reason,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'document_id'
+          })
+
+        if (verificationError) {
+          console.error('Error creating verification record:', verificationError)
+        } else {
+          console.log('Verification record created for audit trail')
+        }
+      } catch (verificationError) {
+        console.error('Verification table error:', verificationError)
+        // Don't fail the request if verification tracking fails
       }
 
       // Add rejection record to track rejections (if table exists)

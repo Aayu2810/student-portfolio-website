@@ -83,111 +83,164 @@ export function ActivityTimeline() {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const supabase = createClient();
+
+  const fetchActivities = async () => {
+    try {
+      // Fetch from access_logs table
+      const { data: accessLogs, error: accessError } = await supabase
+        .from('access_logs')
+        .select(`
+          id,
+          action,
+          document_id,
+          accessed_by,
+          share_token,
+          ip_address,
+          user_agent,
+          accessed_at,
+          documents!inner(title)
+        `)
+        .order('accessed_at', { ascending: false })
+        .limit(20);
+
+      if (accessError) {
+        console.error('Error fetching access logs:', accessError);
+      }
+
+      // Fetch verification logs
+      const { data: verificationLogs, error: verificationError } = await supabase
+        .from('verifications')
+        .select(`
+          id,
+          status,
+          document_id,
+          verifier_id,
+          created_at,
+          updated_at,
+          documents!inner(title),
+          profiles!inner(first_name, last_name)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (verificationError) {
+        console.error('Error fetching verification logs:', verificationError);
+      }
+
+      // Transform and combine data
+      const transformedActivities: ActivityItem[] = [];
+
+      // Process access logs
+      if (accessLogs) {
+        accessLogs.forEach((log: any) => {
+          transformedActivities.push({
+            id: log.id,
+            action: log.action,
+            documentName: log.documents?.title || 'Unknown Document',
+            documentId: log.document_id,
+            accessedBy: log.accessed_by,
+            ipAddress: log.ip_address,
+            shareToken: log.share_token,
+            accessedAt: log.accessed_at,
+            metadata: {
+              userAgent: log.user_agent
+            }
+          });
+        });
+      }
+
+      // Process verification logs
+      if (verificationLogs) {
+        verificationLogs.forEach((log: any) => {
+          transformedActivities.push({
+            id: log.id,
+            action: 'verify',
+            documentName: log.documents?.title || 'Unknown Document',
+            documentId: log.document_id,
+            accessedBy: log.verifier_id,
+            accessedAt: log.created_at,
+            metadata: {
+              status: log.status,
+              verifierName: log.profiles ? 
+                `${log.profiles.first_name} ${log.profiles.last_name}` : 
+                'Unknown Verifier',
+              updated_at: log.updated_at
+            }
+          });
+        });
+      }
+
+      // Sort by accessed_at
+      transformedActivities.sort((a, b) => 
+        new Date(b.accessedAt).getTime() - new Date(a.accessedAt).getTime()
+      );
+
+      setActivities(transformedActivities);
+    } catch (err) {
+      console.error('Error fetching activities:', err);
+      setError('Failed to load activities');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchActivities = async () => {
-      try {
-        const supabase = createClient();
-        
-        // Fetch from access_logs table
-        const { data: accessLogs, error: accessError } = await supabase
-          .from('access_logs')
-          .select(`
-            id,
-            action,
-            document_id,
-            accessed_by,
-            share_token,
-            ip_address,
-            user_agent,
-            accessed_at,
-            documents!inner(title)
-          `)
-          .order('accessed_at', { ascending: false })
-          .limit(20);
-
-        if (accessError) {
-          console.error('Error fetching access logs:', accessError);
-        }
-
-        // Fetch verification logs
-        const { data: verificationLogs, error: verificationError } = await supabase
-          .from('verifications')
-          .select(`
-            id,
-            status,
-            document_id,
-            verifier_id,
-            created_at,
-            updated_at,
-            documents!inner(title),
-            profiles!inner(first_name, last_name)
-          `)
-          .order('created_at', { ascending: false })
-          .limit(20);
-
-        if (verificationError) {
-          console.error('Error fetching verification logs:', verificationError);
-        }
-
-        // Transform and combine data
-        const transformedActivities: ActivityItem[] = [];
-
-        // Process access logs
-        if (accessLogs) {
-          accessLogs.forEach((log: any) => {
-            transformedActivities.push({
-              id: log.id,
-              action: log.action,
-              documentName: log.documents?.title || 'Unknown Document',
-              documentId: log.document_id,
-              accessedBy: log.accessed_by,
-              ipAddress: log.ip_address,
-              shareToken: log.share_token,
-              accessedAt: log.accessed_at,
-              metadata: {
-                userAgent: log.user_agent
-              }
-            });
-          });
-        }
-
-        // Process verification logs
-        if (verificationLogs) {
-          verificationLogs.forEach((log: any) => {
-            transformedActivities.push({
-              id: log.id,
-              action: 'verify',
-              documentName: log.documents?.title || 'Unknown Document',
-              documentId: log.document_id,
-              accessedBy: log.verifier_id,
-              accessedAt: log.created_at,
-              metadata: {
-                status: log.status,
-                verifierName: log.profiles ? 
-                  `${log.profiles.first_name} ${log.profiles.last_name}` : 
-                  'Unknown Verifier',
-                updated_at: log.updated_at
-              }
-            });
-          });
-        }
-
-        // Sort by accessed_at
-        transformedActivities.sort((a, b) => 
-          new Date(b.accessedAt).getTime() - new Date(a.accessedAt).getTime()
-        );
-
-        setActivities(transformedActivities);
-      } catch (err) {
-        console.error('Error fetching activities:', err);
-        setError('Failed to load activities');
-      } finally {
-        setLoading(false);
-      }
-    };
-
+    // Initial fetch
     fetchActivities();
+
+    // Set up real-time subscriptions
+    const accessLogsSubscription = supabase
+      .channel('access_logs_changes')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'access_logs' 
+        }, 
+        (payload) => {
+          console.log('Access log change detected:', payload);
+          fetchActivities(); // Refresh activities when access logs change
+        }
+      )
+      .subscribe();
+
+    const verificationsSubscription = supabase
+      .channel('verifications_changes')
+      .on('postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'verifications'
+        },
+        (payload) => {
+          console.log('Verification change detected:', payload);
+          fetchActivities(); // Refresh activities when verifications change
+        }
+      )
+      .subscribe();
+
+    const documentsSubscription = supabase
+      .channel('documents_changes')
+      .on('postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'documents'
+        },
+        (payload) => {
+          console.log('Document change detected:', payload);
+          // Small delay to ensure related tables are updated
+          setTimeout(fetchActivities, 500);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      accessLogsSubscription.unsubscribe();
+      verificationsSubscription.unsubscribe();
+      documentsSubscription.unsubscribe();
+    };
   }, []);
 
   const formatTimeAgo = (timestamp: string) => {
