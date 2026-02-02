@@ -14,12 +14,13 @@ import {
   MapPin,
   Clock,
   Link,
-  FileText
+  FileText,
+  XCircle
 } from 'lucide-react';
 
 interface ActivityItem {
   id: string;
-  action: 'view' | 'download' | 'share' | 'upload' | 'delete' | 'verify';
+  action: 'view' | 'download' | 'share' | 'upload' | 'delete' | 'verify' | 'reject';
   documentName: string;
   documentId: string;
   accessedBy?: string;
@@ -78,6 +79,14 @@ const activityConfig = {
     borderColor: 'border-emerald-500/30',
     glowColor: 'hover:shadow-emerald-500/20',
     label: 'Verified'
+  },
+  reject: {
+    icon: XCircle,
+    color: 'text-red-400',
+    bgColor: 'bg-red-500/10',
+    borderColor: 'border-red-500/30',
+    glowColor: 'hover:shadow-red-500/20',
+    label: 'Rejected'
   }
 };
 
@@ -197,8 +206,8 @@ export function ActivityTimeline() {
       if (verificationLogs) {
         verificationLogs.forEach((log: any) => {
           transformedActivities.push({
-            id: log.id,
-            action: 'verify',
+            id: `verification-${log.id}`,
+            action: log.status === 'verified' ? 'verify' : 'reject',
             documentName: log.documents?.title || 'Unknown Document',
             documentId: log.document_id,
             accessedBy: log.verifier_id,
@@ -208,7 +217,8 @@ export function ActivityTimeline() {
               verifierName: log.profiles ? 
                 `${log.profiles.first_name} ${log.profiles.last_name}` : 
                 'Unknown Verifier',
-              updated_at: log.updated_at
+              updated_at: log.updated_at,
+              rejection_reason: log.rejection_reason
             }
           });
         });
@@ -417,9 +427,18 @@ export function ActivityTimeline() {
                         <span className={`px-2 py-0.5 rounded text-xs ${
                           activity.metadata.status === 'verified' ? 'bg-green-500/20 text-green-400' :
                           activity.metadata.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
-                          'bg-yellow-500/20 text-yellow-400'
+                          activity.metadata.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                          'bg-gray-500/20 text-gray-400'
                         }`}>
-                          {activity.metadata.status}
+                          {activity.metadata.status === 'verified' ? 'Approved' : 
+                           activity.metadata.status === 'rejected' ? 'Rejected' : 
+                           activity.metadata.status}
+                        </span>
+                      )}
+                      
+                      {activity.metadata?.rejection_reason && (
+                        <span className="text-xs text-red-400 italic">
+                          Reason: {activity.metadata.rejection_reason}
                         </span>
                       )}
                     </div>
