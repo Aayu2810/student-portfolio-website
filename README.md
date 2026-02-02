@@ -82,7 +82,7 @@ CampusCred provides students and faculty with a comprehensive document managemen
    ```
 
 6. **Open your browser**
-   Navigate to [http://localhost:3000](http://localhost:3000)
+   Navigate to [https://student-portfolio-website-seven.vercel.app/](https://student-portfolio-website-seven.vercel.app/)
 
 ### Database Setup
 
