@@ -34,13 +34,14 @@ export default function UserPortfolioPage() {
       try {
         // For demo purposes, show a sample portfolio
         // In a real implementation, this would fetch from a database
+        const displayName = username === 'johndoe' ? 'John Doe' : username.charAt(0).toUpperCase() + username.slice(1)
         const demoPortfolio: PortfolioData = {
-          title: 'John Doe\'s Portfolio',
+          title: `${displayName}'s Portfolio`,
           tagline: 'Full Stack Developer & UI/UX Designer',
           about: 'Passionate developer with 5+ years of experience building modern web applications. Specialized in React, Node.js, and cloud technologies. Love creating intuitive user experiences and solving complex problems.',
           skills: ['React', 'TypeScript', 'Node.js', 'GraphQL', 'AWS', 'Docker', 'UI/UX Design'],
           theme: 'modern',
-          custom_domain: 'john-doe.dev',
+          custom_domain: `${username}.dev`,
           is_public: true,
           enable_qr_code: true
         }

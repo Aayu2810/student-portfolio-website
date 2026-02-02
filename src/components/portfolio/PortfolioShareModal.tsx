@@ -18,9 +18,9 @@ export default function PortfolioShareModal({ onClose }: PortfolioShareModalProp
   const generateShareLink = async () => {
     setLoading(true)
     try {
-      // Generate portfolio URL for demo
+      // Generate portfolio URL for demo with proper username
       const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
-      const portfolioUrl = `${baseUrl}/portfolio/demo`
+      const portfolioUrl = `${baseUrl}/portfolio/johndoe`
       
       setShareUrl(portfolioUrl)
       
